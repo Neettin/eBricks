@@ -2,10 +2,13 @@ import React from 'react';
 import { PRODUCTS } from '../../constants';
 import { Link } from 'react-router-dom';
 
+import itta1 from '../assets/images/itta1.jpg';
+import itta2 from '../assets/images/itta2.jpg';
+
 const Products: React.FC = () => {
   const localProductImages: Record<string, string> = {
-    '101': 'src/assets/images/itta2.jpg', 
-    'CM': 'src/assets/images/itta1.jpg',  
+    '101': itta2, 
+    'CM': itta1,  
   };
 
   return (
