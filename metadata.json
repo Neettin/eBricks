@@ -1,0 +1,8 @@
+
+{
+  "name": "Nepal Brick Pro - Smart Booking System",
+  "description": "A high-end, production-ready brick e-commerce and booking platform for Nepal, featuring trip calculators, location-based delivery rules, and integrated payment flows.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

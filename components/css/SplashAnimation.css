@@ -1,0 +1,212 @@
+/* Netflix-style Splash Animation */
+.splash-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000; /* Start with black like Netflix */
+  z-index: 99999;
+  overflow: hidden;
+  transition: background-color 0.5s ease;
+}
+
+.splash-container.splash-fade-out {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+/* Netflix Logo Animation */
+.netflix-logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.3);
+  opacity: 0;
+  text-align: center;
+  transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+.netflix-logo-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.netflix-logo-expand {
+  transform: translate(-50%, -50%) scale(10);
+  opacity: 0;
+}
+
+.netflix-logo-text {
+  font-family: 'Oswald', sans-serif;
+  font-size: 6rem;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+  text-transform: uppercase;
+}
+
+.netflix-logo-part-1 {
+  color: #dc2626;
+  text-shadow: 0 0 40px rgba(220, 38, 38, 0.8);
+  animation: netflix-glow-red 1.5s ease-in-out;
+}
+
+.netflix-logo-part-2 {
+  color: #d97706;
+  text-shadow: 0 0 40px rgba(217, 119, 6, 0.8);
+  animation: netflix-glow-orange 1.5s ease-in-out 0.1s both;
+}
+
+.netflix-logo-part-3 {
+  color: #fbbf24;
+  text-shadow: 0 0 40px rgba(251, 191, 36, 0.8);
+  animation: netflix-glow-yellow 1.5s ease-in-out 0.2s both;
+}
+
+.netflix-logo-subtitle {
+  font-family: 'Mukta', sans-serif;
+  font-size: 1.5rem;
+  color: #d1d5db;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: netflix-subtitle-fade 1s ease 0.8s forwards;
+}
+
+/* Brick Grid Animation */
+.brick-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+.brick-grid-fill {
+  opacity: 1;
+  transition: opacity 0.8s ease;
+}
+
+.brick-tile {
+  position: absolute;
+  width: 10%;
+  height: 10%;
+  background: linear-gradient(45deg, #dc2626, #d97706);
+  opacity: 0;
+  transform: scale(0) rotate(0deg);
+}
+
+.brick-grid-fill .brick-tile {
+  animation: brick-tile-pop 0.5s ease forwards;
+}
+
+/* Skip Button */
+.skip-button {
+  position: absolute;
+  bottom: 10%;
+  right: 5%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  z-index: 20;
+}
+
+.skip-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Animations */
+@keyframes netflix-glow-red {
+  0% {
+    opacity: 0;
+    text-shadow: 0 0 0px rgba(220, 38, 38, 0);
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 40px rgba(220, 38, 38, 0.8);
+    transform: translateY(0);
+  }
+}
+
+@keyframes netflix-glow-orange {
+  0% {
+    opacity: 0;
+    text-shadow: 0 0 0px rgba(217, 119, 6, 0);
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 40px rgba(217, 119, 6, 0.8);
+    transform: translateY(0);
+  }
+}
+
+@keyframes netflix-glow-yellow {
+  0% {
+    opacity: 0;
+    text-shadow: 0 0 0px rgba(251, 191, 36, 0);
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 40px rgba(251, 191, 36, 0.8);
+    transform: translateY(0);
+  }
+}
+
+@keyframes netflix-subtitle-fade {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 0.8; transform: translateY(0); }
+}
+
+@keyframes brick-tile-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  70% {
+    opacity: 0.8;
+    transform: scale(1.1) rotate(5deg);
+  }
+  100% {
+    opacity: 0.6;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .netflix-logo-text {
+    font-size: 3.5rem;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  
+  .netflix-logo-subtitle {
+    font-size: 1rem;
+    letter-spacing: 0.3em;
+  }
+  
+  .skip-button {
+    bottom: 5%;
+    right: 5%;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}

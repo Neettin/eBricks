@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  # This fixes the "Page Not Found" error when you refresh the page 
+  # or visit a link like ebricks.com/booking directly.
+  from = "/*"
+  to = "/index.html"
+  status = 200
