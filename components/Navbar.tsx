@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../src/services/firebaseConfig'; 
 import { signOut, User } from 'firebase/auth';
-import ebricksLogo from '../src/assets/images/eBricks-logo.png'; 
+import ebricksLogo from '../src/assets/images/ebricks-logo.png'; 
 
 interface NavbarProps {
   user: User | null;
