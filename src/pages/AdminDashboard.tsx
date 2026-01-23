@@ -77,6 +77,9 @@ const AdminDashboard: React.FC = () => {
     return () => unsubscribe();
   }, [isAuthorized]);
 
+  // Inside AdminDashboard.tsx
+  const savedAuth = localStorage.getItem('adminAuth'); // Persistent check
+  
   // CRUD: Update Status
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     await updateDoc(doc(db, "orders", id), { status: newStatus });
