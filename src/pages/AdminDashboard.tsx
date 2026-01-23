@@ -46,25 +46,36 @@ const AdminDashboard: React.FC = () => {
   const hasPrompted = useRef(false);
 
   useEffect(() => {
+    // 1. Check if we've already dealt with the prompt in this render cycle
     if (hasPrompted.current) return;
-    hasPrompted.current = true;
 
-    const sessionAuth = sessionStorage.getItem('adminAuth');
-    if (sessionAuth === 'true') {
-      setIsAuthorized(true);
-      setIsLoading(false);
-      return;
-    }
+    const timer = setTimeout(() => {
+      // 2. Check localStorage (Chrome is more stable with this than sessionStorage)
+      const savedAuth = localStorage.getItem('adminAuth');
+      
+      if (savedAuth === 'true') {
+        setIsAuthorized(true);
+        setIsLoading(false);
+        hasPrompted.current = true;
+        return;
+      }
 
-    const password = prompt("Enter Admin Password:");
-    if (password === "admin@123") {
-      setIsAuthorized(true);
-      setIsLoading(false);
-      sessionStorage.setItem('adminAuth', 'true');
-    } else {
-      alert("Unauthorized!");
-      window.location.href = "#/";
-    }
+      // 3. Trigger the prompt
+      const password = prompt("Enter Admin Password:");
+      
+      if (password === "admin@123") {
+        localStorage.setItem('adminAuth', 'true');
+        setIsAuthorized(true);
+        setIsLoading(false);
+      } else {
+        alert("Unauthorized!");
+        // Use hash-based navigation since you are using HashRouter
+        window.location.hash = "#/"; 
+      }
+      hasPrompted.current = true;
+    }, 150); // Small delay helps Chrome process the UI before the blocking prompt
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
