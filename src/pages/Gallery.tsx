@@ -39,7 +39,7 @@ const Gallery: React.FC = () => {
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                 <span className="text-white font-oswald text-2xl tracking-widest border-2 border-white px-6 py-2 uppercase">
-                  Nepal Brick Pro
+                  𝓮Bricks
                 </span>
               </div>
             </div>
