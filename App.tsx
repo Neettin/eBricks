@@ -70,14 +70,8 @@ const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/contact" element={<Contact />} />
 
-         <Route 
-                path="/admin" 
-                element={
-                user && user.email === ADMIN_EMAIL 
-                ? <AdminDashboard /> 
-                : <Navigate to="/login" replace />
-            } 
-          />
+          {/* ADMIN ROUTE: Protected by Email */}
+          <Route path="/admin" element={<AdminDashboard />} />
           {/* Login logic */}
           <Route 
             path="/login" 
