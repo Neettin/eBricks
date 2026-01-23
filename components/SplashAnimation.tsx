@@ -72,9 +72,8 @@ const SplashAnimation: React.FC<SplashAnimationProps> = ({ onComplete }) => {
         {/* Netflix-style logo */}
         <div className={`netflix-logo ${animationPhase >= 1 ? 'netflix-logo-visible' : ''} ${animationPhase >= 2 ? 'netflix-logo-expand' : ''}`}>
           <div className="netflix-logo-text">
-            <span className="netflix-logo-part-1">NEPAL</span>
-            <span className="netflix-logo-part-2">BRICK</span>
-            <span className="netflix-logo-part-3">PRO</span>
+            <span className="netflix-logo-part-1">𝓮</span>
+            <span className="netflix-logo-part-2">b=Bricks</span>
           </div>
           <div className="netflix-logo-subtitle">
             Building Nepal's Legacy
