@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-
 import {db} from '../services/firebaseConfig'; 
 
 // Firestore methods
@@ -14,9 +13,6 @@ import {
   Timestamp,
   getDocs
 } from 'firebase/firestore';
-
-// Auth methods
-import { onAuthStateChanged } from 'firebase/auth';
 
 interface Order {
   id: string;
@@ -38,6 +34,13 @@ const AdminDashboard: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, orderId: string | null}>({
+    show: false,
+    orderId: null
+  });
   const [editForm, setEditForm] = useState({
     customerName: '',
     phone: '',
@@ -46,11 +49,12 @@ const AdminDashboard: React.FC = () => {
     location: '',
     totalAmount: 0,
   });
-  const hasPrompted = useRef(false);
+  const hasCheckedAuth = useRef(false);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (hasPrompted.current) return;
-    hasPrompted.current = true;
+    if (hasCheckedAuth.current) return;
+    hasCheckedAuth.current = true;
 
     const sessionAuth = sessionStorage.getItem('adminAuth');
     if (sessionAuth === 'true') {
@@ -59,16 +63,38 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
-    const password = prompt("Enter Admin Password:");
-    if (password === "admin@123") {
-      setIsAuthorized(true);
-      setIsLoading(false);
-      sessionStorage.setItem('adminAuth', 'true');
-    } else {
-      alert("Unauthorized!");
-      window.location.href = "/";
-    }
+    // Show custom password modal instead of browser prompt
+    setShowPasswordModal(true);
+    setIsLoading(false);
   }, []);
+
+  // Focus password input when modal opens
+  useEffect(() => {
+    if (showPasswordModal && passwordInputRef.current) {
+      setTimeout(() => passwordInputRef.current?.focus(), 100);
+    }
+  }, [showPasswordModal]);
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (passwordInput === "admin@123") {
+      setIsAuthorized(true);
+      setShowPasswordModal(false);
+      sessionStorage.setItem('adminAuth', 'true');
+      setPasswordError('');
+      setPasswordInput('');
+    } else {
+      setPasswordError('Incorrect password. Please try again.');
+      setPasswordInput('');
+      passwordInputRef.current?.focus();
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setShowPasswordModal(false);
+    window.location.href = "/";
+  };
 
   useEffect(() => {
     if (!isAuthorized) return;
@@ -92,9 +118,7 @@ const AdminDashboard: React.FC = () => {
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Error refreshing orders:', error);
-      alert('Failed to refresh orders');
     } finally {
-      // Add a small delay so the animation is visible
       setTimeout(() => setIsRefreshing(false), 500);
     }
   };
@@ -104,11 +128,24 @@ const AdminDashboard: React.FC = () => {
     await updateDoc(doc(db, "orders", id), { status: newStatus });
   };
 
-  // CRUD: Delete Order
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this order permanently?")) {
-      await deleteDoc(doc(db, "orders", id));
+  // CRUD: Delete Order with custom confirmation
+  const handleDeleteClick = (id: string) => {
+    setDeleteConfirm({ show: true, orderId: id });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteConfirm.orderId) {
+      try {
+        await deleteDoc(doc(db, "orders", deleteConfirm.orderId));
+        setDeleteConfirm({ show: false, orderId: null });
+      } catch (error) {
+        console.error('Error deleting order:', error);
+      }
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm({ show: false, orderId: null });
   };
 
   // CRUD: Edit Order
@@ -137,10 +174,8 @@ const AdminDashboard: React.FC = () => {
         totalAmount: editForm.totalAmount,
       });
       setEditingOrder(null);
-      alert('Order updated successfully!');
     } catch (error) {
       console.error('Error updating order:', error);
-      alert('Failed to update order');
     }
   };
 
@@ -166,7 +201,6 @@ const AdminDashboard: React.FC = () => {
 
   // Helper to parse location
   const parseLocation = (location: string) => {
-    // Check if location contains coordinates
     const coordMatch = location.match(/\(([^)]+)\)/);
     if (coordMatch) {
       const coords = coordMatch[1];
@@ -195,11 +229,71 @@ const AdminDashboard: React.FC = () => {
     return lastUpdate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Password Modal
+  if (showPasswordModal) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-brick-900 to-brick-800 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+          <div className="bg-gradient-to-r from-brick-700 to-brick-900 p-8 text-center">
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-lock text-4xl text-brick-800"></i>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-2">Admin Access</h2>
+            <p className="text-heritage-gold">Enter password to continue</p>
+          </div>
+          
+          <form onSubmit={handlePasswordSubmit} className="p-8">
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Admin Password
+              </label>
+              <input
+                ref={passwordInputRef}
+                type="password"
+                value={passwordInput}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  setPasswordError('');
+                }}
+                className="w-full p-4 border-2 rounded-xl focus:ring-2 focus:ring-brick-500 focus:border-brick-500 text-lg"
+                placeholder="Enter password"
+                autoComplete="off"
+              />
+              {passwordError && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                  <i className="fas fa-exclamation-circle"></i>
+                  <span className="text-sm font-medium">{passwordError}</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handlePasswordCancel}
+                className="flex-1 px-6 py-4 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-6 py-4 bg-gradient-to-r from-brick-700 to-brick-900 text-white rounded-xl hover:from-brick-800 hover:to-brick-950 transition-all font-semibold shadow-lg"
+              >
+                <i className="fas fa-sign-in-alt mr-2"></i>
+                Access
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) return (
     <div className="h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
         <div className="w-16 h-16 border-4 border-brick-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-lg font-semibold text-gray-700">Authenticating...</p>
+        <p className="text-lg font-semibold text-gray-700">Loading...</p>
       </div>
     </div>
   );
@@ -221,7 +315,7 @@ const AdminDashboard: React.FC = () => {
             className="flex items-center gap-2 px-6 py-3 bg-brick-800 text-heritage-gold rounded-lg hover:bg-brick-900 transition-colors font-semibold"
           >
             <i className="fas fa-sign-out-alt"></i>
-            Logout Admin
+            Logout
           </button>
         </div>
 
@@ -283,12 +377,12 @@ const AdminDashboard: React.FC = () => {
 
         {/* Orders Table */}
         <div className="bg-white shadow-xl rounded-3xl overflow-hidden">
-          <div className="p-6 border-b flex justify-between items-center">
+          <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">Order Management</h2>
               <p className="text-sm text-gray-600 mt-1">Total {orders.length} orders • Updated in real-time</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg flex items-center gap-2">
                 <div className="relative">
                   <span className="flex h-2 w-2">
@@ -372,7 +466,6 @@ const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
                         
-                        {/* Per Unit Price */}
                         <div className="bg-gray-50 p-2 rounded-lg">
                           <div className="text-sm text-gray-600 flex justify-between items-center">
                             <span>Per Unit:</span>
@@ -380,7 +473,6 @@ const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
                         
-                        {/* Location Section */}
                         <div className="bg-gray-50 p-3 rounded-lg border">
                           <div className="flex items-start gap-2">
                             <div className="text-green-600 mt-0.5">
@@ -455,7 +547,7 @@ const AdminDashboard: React.FC = () => {
                           <span className="text-sm font-medium">Edit</span>
                         </button>
                         <button 
-                          onClick={() => handleDelete(order.id)}
+                          onClick={() => handleDeleteClick(order.id)}
                           className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                           title="Delete Order"
                         >
@@ -479,16 +571,46 @@ const AdminDashboard: React.FC = () => {
           )}
         </div>
 
-        {/* Edit Modal */}
-        {editingOrder && (
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm.show && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <i className="fas fa-exclamation-triangle text-3xl text-red-600"></i>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">Delete Order?</h3>
+                <p className="text-gray-600">Are you sure you want to delete this order? This action cannot be undone.</p>
+              </div>
+              
+              <div className="p-6 border-t flex gap-4">
+                <button
+                  onClick={handleDeleteCancel}
+                  className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {editingOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md my-8">
               <div className="p-6 border-b">
                 <h3 className="text-2xl font-bold text-gray-800">Edit Order</h3>
                 <p className="text-gray-600">Update order details</p>
               </div>
               
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Customer Name
@@ -524,7 +646,7 @@ const AdminDashboard: React.FC = () => {
                       onChange={(e) => setEditForm({...editForm, quantity: parseInt(e.target.value) || 0})}
                       className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
-                  </div>
+                                      </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

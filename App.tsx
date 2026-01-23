@@ -16,17 +16,16 @@ import Gallery from './src/pages/Gallery';
 import Contact from './src/pages/Contact';
 import AuthPage from './src/pages/AuthPage'; 
 import MyOrders from './src/pages/MyOrders';
-import AdminDashboard from './src/pages/AdminDashboard'; // Ensure this import exists
+import AdminDashboard from './src/pages/AdminDashboard';
 
 const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthPage = location.pathname === '/login';
 
-  
   const ADMIN_EMAIL = "admin@gmail.com"; 
 
-  // --- 1. SESSION TIMEOUT LOGIC ---
+  // --- SESSION TIMEOUT LOGIC ---
   useEffect(() => {
     if (!user) return;
 
@@ -72,6 +71,7 @@ const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
 
           {/* ADMIN ROUTE: Protected by Email */}
           <Route path="/admin" element={<AdminDashboard />} />
+          
           {/* Login logic */}
           <Route 
             path="/login" 
@@ -113,14 +113,11 @@ const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
 };
 
 const App: React.FC = () => {
-  const [showSplash, setShowSplash] = useState<boolean | null>(null);
+  const [showSplash, setShowSplash] = useState(true); // Start with true to always show splash
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    const hasSeenSplash = localStorage.getItem('hasSeenSplash');
-    setShowSplash(!hasSeenSplash);
-
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
@@ -131,10 +128,10 @@ const App: React.FC = () => {
 
   const handleSplashComplete = () => {
     setShowSplash(false);
-    localStorage.setItem('hasSeenSplash', 'true');
   };
 
-  if (showSplash === null || authLoading) {
+  // Show loading spinner only while auth is loading
+  if (authLoading) {
     return (
       <div className="fixed inset-0 bg-brick-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-heritage-gold"></div>
@@ -142,6 +139,7 @@ const App: React.FC = () => {
     );
   }
 
+  // Show splash animation
   if (showSplash) {
     return <SplashAnimation onComplete={handleSplashComplete} />;
   }
