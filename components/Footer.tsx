@@ -1,6 +1,6 @@
 import React from 'react';
 import { VENDOR } from '../constants';
-import ebricksLogo from '../src/assets/images/eBricks-logo.png'; // Import the same logo
+import ebricksLogo from '../src/assets/images/ebricks-logo.png'; // Import the same logo
 
 const Footer: React.FC = () => {
   return (
