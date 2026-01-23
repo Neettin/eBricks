@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-
 import {db} from '../services/firebaseConfig'; 
 
 // Firestore methods
@@ -12,11 +11,13 @@ import {
   updateDoc, 
   doc, 
   deleteDoc, 
-  Timestamp 
+  Timestamp,
+  getDocs
 } from 'firebase/firestore';
 
 // Auth methods
 import { onAuthStateChanged } from 'firebase/auth';
+
 interface Order {
   id: string;
   customerName?: string;
@@ -34,6 +35,8 @@ const AdminDashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editForm, setEditForm] = useState({
     customerName: '',
@@ -73,12 +76,29 @@ const AdminDashboard: React.FC = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Order[];
       setOrders(data);
+      setLastUpdate(new Date());
     });
     return () => unsubscribe();
   }, [isAuthorized]);
 
-  // Inside AdminDashboard.tsx
-  const savedAuth = localStorage.getItem('adminAuth'); // Persistent check
+  // Manual refresh function
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Order[];
+      setOrders(data);
+      setLastUpdate(new Date());
+    } catch (error) {
+      console.error('Error refreshing orders:', error);
+      alert('Failed to refresh orders');
+    } finally {
+      // Add a small delay so the animation is visible
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
   // CRUD: Update Status
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     await updateDoc(doc(db, "orders", id), { status: newStatus });
@@ -163,6 +183,16 @@ const AdminDashboard: React.FC = () => {
       display: location || 'Location not specified',
       hasCoords: false
     };
+  };
+
+  // Format last update time
+  const formatLastUpdate = () => {
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - lastUpdate.getTime()) / 1000);
+    
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return lastUpdate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   if (isLoading) return (
@@ -259,10 +289,26 @@ const AdminDashboard: React.FC = () => {
               <p className="text-sm text-gray-600 mt-1">Total {orders.length} orders • Updated in real-time</p>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-lg">
-                <i className="fas fa-sync-alt mr-2 text-green-500"></i>
-                Live Updates
+              <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                <div className="relative">
+                  <span className="flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+                </div>
+                <span>Live • {formatLastUpdate()}</span>
               </div>
+              <button
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh orders"
+              >
+                <i className={`fas fa-sync-alt ${isRefreshing ? 'animate-spin' : ''}`}></i>
+                <span className="text-sm font-medium">
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                </span>
+              </button>
             </div>
           </div>
           
