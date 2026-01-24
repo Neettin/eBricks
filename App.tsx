@@ -113,7 +113,7 @@ const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
 };
 
 const App: React.FC = () => {
-  const [showSplash, setShowSplash] = useState(true); // Start with true to always show splash
+  const [showSplash, setShowSplash] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -130,7 +130,6 @@ const App: React.FC = () => {
     setShowSplash(false);
   };
 
-  // Show loading spinner only while auth is loading
   if (authLoading) {
     return (
       <div className="fixed inset-0 bg-brick-900 flex items-center justify-center">
@@ -139,7 +138,6 @@ const App: React.FC = () => {
     );
   }
 
-  // Show splash animation
   if (showSplash) {
     return <SplashAnimation onComplete={handleSplashComplete} />;
   }

@@ -37,5 +37,8 @@ export const ORDER_RULES = {
   minNormal: 2000,
   minBooking: 50000,
   smallQtyWarning: "Orders of 500 or 1000 bricks have significantly higher delivery costs due to logistics overhead.",
-  brokenBricksPolicy: "Note: Up to 5% broken bricks may be included as per standard industrial norms. These are highly useful for floor management and sub-base preparation."
+};
+export const HUBS = {
+  CM: { lat: 27.631685, lng: 85.303183, name: 'C.M. Brick Factory, Karyabinayak' },
+  '101': { lat: 27.666880, lng: 85.321960, name: '101 Brick, Khichapukhu Marg, Lalitpur' }
 };
