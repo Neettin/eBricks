@@ -56,10 +56,10 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="font-oswald font-bold text-lg mb-6 uppercase tracking-widest text-heritage-gold">Business Rules</h4>
             <ul className="space-y-4 text-gray-400 font-medium">
-              <li><a href="#/rules" className="hover:text-white transition">1 Trip = 2,000 Bricks</a></li>
-              <li><a href="#/rules" className="hover:text-white transition">Inside Ring Road Delivery</a></li>
-              <li><a href="#/rules" className="hover:text-white transition">Bulk Booking Policy</a></li>
-              <li><a href="#/rules" className="hover:text-white transition">Broken Bricks Policy</a></li>
+              <li><a className="hover:text-white transition">1 Trip = 2,000 Bricks</a></li>
+              <li><a className="hover:text-white transition">Inside Ring Road Delivery after 7pm</a></li>
+              <li><a className="hover:text-white transition">Bulk Booking Available</a></li>
+              <li><a className="hover:text-white transition">No Return & Refund</a></li>
             </ul>
           </div>
 

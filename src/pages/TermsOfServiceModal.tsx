@@ -19,7 +19,7 @@ const TermsOfServiceModal: React.FC<TermsOfServiceModalProps> = ({ isOpen, onClo
         <h4 className="font-bold text-lg text-gray-900">Order Rules</h4>
         <ul className="list-disc pl-5 space-y-1">
           <li>1 Truck = 2,000 Bricks standard load</li>
-          <li>Delivery inside Ring Road area only</li>
+          <li>Delivery inside Ring Road area only after 7 pm</li>
           <li>Prices in NPR, taxes included</li>
           <li>Inspect bricks on delivery</li>
         </ul>
@@ -31,11 +31,9 @@ const TermsOfServiceModal: React.FC<TermsOfServiceModalProps> = ({ isOpen, onClo
           <li>Full payment may be required for bulk orders</li>
         </ul>
 
-        <h4 className="font-bold text-lg text-gray-900">Returns & Refunds</h4>
+        <h4 className="font-bold text-lg text-gray-900">No Returns & Refunds Policy</h4>
         <ul className="list-disc pl-5 space-y-1">
           <li>Report issues within 24 hours</li>
-          <li>Defective bricks replaced</li>
-          <li>Refunds processed in 7-14 days</li>
         </ul>
 
         <h4 className="font-bold text-lg text-gray-900">Responsibilities</h4>

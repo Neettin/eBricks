@@ -236,7 +236,7 @@ const AuthPage: React.FC = () => {
         setFullName('');
         
         // Show success message and switch to login
-        alert('Account created successfully! Please sign in.');
+        alert('Account created successfully!');
         setIsLogin(true);
         setError('');
       }
