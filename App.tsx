@@ -69,6 +69,7 @@ const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/contact" element={<Contact />} />
 
+
           {/* ADMIN ROUTE: Protected by Email */}
           <Route path="/admin" element={<AdminDashboard />} />
           

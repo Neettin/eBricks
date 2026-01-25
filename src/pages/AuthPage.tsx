@@ -5,7 +5,9 @@ import {
   signInWithEmailAndPassword, 
   updateProfile,
   GoogleAuthProvider,
-  signInWithPopup 
+  signInWithPopup,
+  sendEmailVerification,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { auth } from '../services/firebaseConfig';
 import ReCAPTCHA from "react-google-recaptcha";
@@ -29,10 +31,16 @@ const AuthPage: React.FC = () => {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [rememberMe, setRememberMe] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   
   const navigate = useNavigate();
   const recaptchaRef = useRef<ReCAPTCHA>(null);
   const googleProvider = new GoogleAuthProvider();
+
+  // Check if user is on mobile
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   // Load saved credentials on component mount
   useEffect(() => {
@@ -187,7 +195,59 @@ const AuthPage: React.FC = () => {
     checkPasswordStrength(value);
   };
 
-  // Handle submit
+  // Handle forgot password with mobile support
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!validateEmail(forgotPasswordEmail)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+
+    try {
+      // For mobile, use handleCodeInApp: true for better experience
+      // For desktop, use handleCodeInApp: false for native Firebase pages
+      await sendPasswordResetEmail(auth, forgotPasswordEmail, {
+        url: `${window.location.origin}/login`,
+        handleCodeInApp: isMobile // Better for mobile if true
+      });
+      
+      let message = `Password reset email sent to ${forgotPasswordEmail}. `;
+      
+      if (isMobile) {
+        message += "Please check your email and open the link in this app.";
+      } else {
+        message += "Please check your inbox and follow the instructions to reset your password.";
+      }
+      
+      alert(message);
+      setShowForgotPassword(false);
+      setForgotPasswordEmail('');
+    } catch (err: any) {
+      console.error("Password reset error:", err);
+      
+      switch (err.code) {
+        case 'auth/user-not-found':
+          setError("No account found with this email");
+          break;
+        case 'auth/invalid-email':
+          setError("Invalid email address");
+          break;
+        case 'auth/too-many-requests':
+          setError("Too many attempts. Please try again later");
+          break;
+        default:
+          setError("Failed to send reset email. Please try again.");
+      }
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
+  // Handle main form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -221,24 +281,44 @@ const AuthPage: React.FC = () => {
         await signInWithEmailAndPassword(auth, email, password);
         navigate('/');
       } else {
-        // SIGN UP LOGIC - Redirect to login after successful signup
+        // SIGN UP LOGIC
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
         
         // Update the user's profile with their Full Name
-        await updateProfile(userCredential.user, {
+        await updateProfile(user, {
           displayName: fullName
         });
+
+        // Send email verification
+        try {
+          await sendEmailVerification(user, {
+            url: `${window.location.origin}/login`,
+            handleCodeInApp: isMobile // Better for mobile if true
+          });
+          
+          let message = 'Account created successfully! ';
+          
+          if (isMobile) {
+            message += "A verification email will be sent. Please open the link in this app to verify your account.";
+          } else {
+            message += "A verification email will be sent in a few minutes. Please check your inbox and verify your email to access all features.";
+          }
+          
+          alert(message);
+        } catch (error) {
+          console.error("Verification email error:", error);
+          alert('Account created successfully! You may receive a verification email shortly. Please verify your email to access all features.');
+        }
         
-        // Clear form and show success message
+        // Clear form and redirect to home (user is already logged in)
         setEmail('');
         setPassword('');
         setConfirmPassword('');
         setFullName('');
         
-        // Show success message and switch to login
-        alert('Account created successfully!');
-        setIsLogin(true);
-        setError('');
+        // Navigate to home since user is logged in
+        navigate('/');
       }
       
     } catch (err: any) {
@@ -263,6 +343,9 @@ const AuthPage: React.FC = () => {
           break;
         case 'auth/too-many-requests':
           setError("Too many attempts. Please try again later.");
+          break;
+        case 'auth/requires-recent-login':
+          setError("Please log out and log in again to perform this action.");
           break;
         default:
           setError("Authentication failed. Please check your connection.");
@@ -472,10 +555,7 @@ const AuthPage: React.FC = () => {
                 {/* Forgot Password Link - Login Only */}
                 <button
                   type="button"
-                  onClick={() => {
-                    // Add forgot password functionality here
-                    alert('Forgot password functionality to be implemented');
-                  }}
+                  onClick={() => setShowForgotPassword(true)}
                   className="text-brick-600 hover:text-brick-800 font-bold text-sm"
                 >
                   Forgot password?
@@ -490,6 +570,7 @@ const AuthPage: React.FC = () => {
               ref={recaptchaRef}
               sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
               onChange={(token) => setCaptchaToken(token)}
+              size={isMobile ? "compact" : "normal"} // Smaller on mobile
             />
           </div>
 
@@ -565,6 +646,16 @@ const AuthPage: React.FC = () => {
           </button>
         </div>
 
+        {/* Mobile-specific note */}
+        {isMobile && (
+          <div className="text-center text-xs text-gray-500 pt-2 border-t border-gray-200">
+            <p className="flex items-center justify-center gap-1">
+              <i className="fas fa-mobile-alt"></i>
+              <span>On mobile? Verification/reset links should open in this app.</span>
+            </p>
+          </div>
+        )}
+
         {/* Security Note */}
         <div className="text-center text-xs text-gray-500 pt-4">
           <p className="flex items-center justify-center gap-1">
@@ -573,6 +664,88 @@ const AuthPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-oswald font-bold text-brick-900">
+                Reset Password
+              </h3>
+              <button
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setForgotPasswordEmail('');
+                  setError('');
+                }}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-brick-500 outline-none transition-all"
+                  placeholder="Enter your email"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div className="text-sm text-gray-600">
+                <p>We'll send you a password reset link to your email.</p>
+                {isMobile && (
+                  <p className="mt-1 text-brick-600">
+                    <i className="fas fa-info-circle mr-1"></i>
+                    On mobile? The link should open in this app.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotPasswordEmail('');
+                    setError('');
+                  }}
+                  className="flex-1 py-3 rounded-xl font-bold text-gray-700 border border-gray-300 hover:bg-gray-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={forgotPasswordLoading}
+                  className={`flex-1 py-3 rounded-xl font-bold text-white transition-all ${
+                    forgotPasswordLoading
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-brick-800 hover:bg-brick-900'
+                  }`}
+                >
+                  {forgotPasswordLoading ? (
+                    <>
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></span>
+                      Sending...
+                    </>
+                  ) : (
+                    'Send Reset Link'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
