@@ -241,7 +241,7 @@ const AuthPage: React.FC = () => {
         handleCodeInApp: false
       });
       
-      alert(`Password reset email sent to ${forgotPasswordEmail}!\n\nPlease check your email and follow the instructions.`);
+      alert(`Password Reset Email Sent!\n\n A password reset link has been sent to:\n${forgotPasswordEmail}\n\n Please check your email and click the reset link.\n\n The link will open in your browser where you can set a new password.\n\n IMPORTANT: After resetting your password in the browser, please return back to this app to login with your new credentials.`);
       
       setShowForgotPassword(false);
       setForgotPasswordEmail('');
@@ -279,7 +279,7 @@ const AuthPage: React.FC = () => {
         handleCodeInApp: false
       });
       
-      alert("Verification email resent! Please check your inbox.");
+      alert(` Verification Email Resent!\n\n A new verification email has been sent to:\n${currentUser.email}\n\n Please check your inbox and click the verification link.\n\n The link will open in your browser to confirm your email address.\n\n IMPORTANT: After verifying your email in the browser, please return back to this app to continue using your account.`);
     } catch (error: any) {
       console.error("Resend verification error:", error);
       setError("Failed to resend verification email. Please try again.");
@@ -291,10 +291,10 @@ const AuthPage: React.FC = () => {
     await refreshUser();
     
     if (currentUser?.emailVerified) {
-      alert("Your email is now verified! You can continue using the app.");
+      alert(` Email Verified Successfully!\n\nYour email ${currentUser.email} is now verified.\n\nYou can continue using the eBricks app.`);
       setShowVerificationWarning(false);
     } else {
-      alert(" Your email is still not verified. Please check your inbox and click the verification link.");
+      alert(` Email Not Verified Yet\n\nYour email ${currentUser?.email} is still not verified.\n\n Please check your inbox and click the verification link we sent.\n\n The link will open in your browser to complete verification.\n\n IMPORTANT: After verifying in the browser, return back to this app and click "Check Status" again.`);
     }
   };
 
@@ -335,7 +335,7 @@ const AuthPage: React.FC = () => {
         // Check if email is verified
         if (!user.emailVerified) {
           setShowVerificationWarning(true);
-          alert("IMPORTANT: Your email is not verified!\n\nPlease check your inbox and verify your email to access all features.\n\nWe've sent you a verification email when you signed up.");
+          alert(` IMPORTANT: Email Verification Required!\n\nYour account ${user.email} is not verified yet.\n\n Please check your email inbox and click the verification link we sent when you signed up.\n\n The verification link will open in your browser to confirm your email.\n\n IMPORTANT: After verifying in the browser, please return back to this app to access all features.\n\n Need a new verification email? Click "Resend Verification" below.`);
         } else {
           // Redirect to home page only if verified
           navigate('/');
@@ -357,7 +357,7 @@ const AuthPage: React.FC = () => {
             handleCodeInApp: false
           });
           
-          alert('Account created successfully!\n\n A verification email has been sent to your inbox.\n\n Please verify your email within 24 hours.');
+          alert(` Account Created Successfully!\n\n👋 Welcome to eBricks, ${fullName}!\n\n A verification email has been sent to:\n${user.email}\n\n🔗 Please check your inbox and click the verification link.\n\n🌐 The link will open in your browser to confirm your email address.\n\n IMPORTANT: After verifying your email in the browser, please return back to this app to login with your new account.\n\n Please verify within 24 hours to activate your account fully.`);
           
           // Sign out user so they verify email first
           await auth.signOut();
@@ -371,7 +371,7 @@ const AuthPage: React.FC = () => {
           setError('');
         } catch (error) {
           console.error("Verification email error:", error);
-          alert(' Account created successfully!\n\n Please verify your email when you receive it.');
+          alert(`Account Created Successfully!\n\n👋 Welcome to eBricks, ${fullName}!\n\n A verification email will be sent shortly to:\n${user.email}\n\n When you receive the email, please click the verification link.\n\n The link will open in your browser to confirm your email.\n\n🔄 IMPORTANT: After verifying in the browser, please return back to this app to login.\n\n Note: You must verify your email to access all features.`);
           
           // Clear form and switch to login
           setEmail('');
