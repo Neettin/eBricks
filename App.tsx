@@ -17,6 +17,7 @@ import Contact from './src/pages/Contact';
 import AuthPage from './src/pages/AuthPage'; 
 import MyOrders from './src/pages/MyOrders';
 import AdminDashboard from './src/pages/AdminDashboard';
+import AuthRedirectPage from './src/pages/AuthRedirectPage'; // ADD THIS IMPORT
 
 const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
   const location = useLocation();
@@ -69,6 +70,8 @@ const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/contact" element={<Contact />} />
 
+          {/* ADD THIS ROUTE - Catches Firebase auth redirects */}
+          <Route path="/__/auth/action" element={<AuthRedirectPage />} />
 
           {/* ADMIN ROUTE: Protected by Email */}
           <Route path="/admin" element={<AdminDashboard />} />

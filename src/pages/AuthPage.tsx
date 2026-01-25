@@ -7,7 +7,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   sendEmailVerification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  reload
 } from "firebase/auth";
 import { auth } from '../services/firebaseConfig';
 import ReCAPTCHA from "react-google-recaptcha";
@@ -34,15 +35,14 @@ const AuthPage: React.FC = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [showVerificationWarning, setShowVerificationWarning] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   
   const navigate = useNavigate();
   const recaptchaRef = useRef<ReCAPTCHA>(null);
   const googleProvider = new GoogleAuthProvider();
 
-  // Check if user is on mobile
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-  // Load saved credentials on component mount
+  // Load saved credentials and check auth state
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
     const savedRememberMe = localStorage.getItem('rememberMe') === 'true';
@@ -51,7 +51,34 @@ const AuthPage: React.FC = () => {
       setEmail(savedEmail);
       setRememberMe(true);
     }
+    
+    // Listen to auth state changes
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      
+      // Check if user is logged in but not verified
+      if (user && !user.emailVerified && user.providerData[0]?.providerId === 'password') {
+        setShowVerificationWarning(true);
+      } else {
+        setShowVerificationWarning(false);
+      }
+    });
+    
+    return () => unsubscribe();
   }, []);
+
+  // Refresh user data to check verification status
+  const refreshUser = async () => {
+    if (auth.currentUser) {
+      await reload(auth.currentUser);
+      const updatedUser = auth.currentUser;
+      setCurrentUser(updatedUser);
+      
+      if (updatedUser.emailVerified) {
+        setShowVerificationWarning(false);
+      }
+    }
+  };
 
   // Google Sign In
   const handleGoogleSignIn = async () => {
@@ -66,7 +93,8 @@ const AuthPage: React.FC = () => {
       localStorage.setItem('rememberedEmail', user.email || '');
       localStorage.setItem('rememberMe', 'true');
       
-      // Redirect to home page only on successful login
+      // Google users are automatically verified
+      // Redirect to home page
       navigate('/');
     } catch (err: any) {
       console.error("Google Auth Error:", err);
@@ -195,7 +223,7 @@ const AuthPage: React.FC = () => {
     checkPasswordStrength(value);
   };
 
-  // Handle forgot password with mobile support
+  // Handle forgot password
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -208,22 +236,13 @@ const AuthPage: React.FC = () => {
     setForgotPasswordLoading(true);
 
     try {
-      // For mobile, use handleCodeInApp: true for better experience
-      // For desktop, use handleCodeInApp: false for native Firebase pages
       await sendPasswordResetEmail(auth, forgotPasswordEmail, {
         url: `${window.location.origin}/login`,
-        handleCodeInApp: isMobile // Better for mobile if true
+        handleCodeInApp: false
       });
       
-      let message = `Password reset email sent to ${forgotPasswordEmail}. `;
+      alert(`Password reset email sent to ${forgotPasswordEmail}!\n\nPlease check your email and follow the instructions.`);
       
-      if (isMobile) {
-        message += "Please check your email and open the link in this app.";
-      } else {
-        message += "Please check your inbox and follow the instructions to reset your password.";
-      }
-      
-      alert(message);
       setShowForgotPassword(false);
       setForgotPasswordEmail('');
     } catch (err: any) {
@@ -244,6 +263,38 @@ const AuthPage: React.FC = () => {
       }
     } finally {
       setForgotPasswordLoading(false);
+    }
+  };
+
+  // Resend verification email
+  const handleResendVerification = async () => {
+    if (!currentUser) {
+      setError("Please sign in first to resend verification email");
+      return;
+    }
+
+    try {
+      await sendEmailVerification(currentUser, {
+        url: `${window.location.origin}/login`,
+        handleCodeInApp: false
+      });
+      
+      alert("Verification email resent! Please check your inbox.");
+    } catch (error: any) {
+      console.error("Resend verification error:", error);
+      setError("Failed to resend verification email. Please try again.");
+    }
+  };
+
+  // Check verification status
+  const handleCheckVerification = async () => {
+    await refreshUser();
+    
+    if (currentUser?.emailVerified) {
+      alert("Your email is now verified! You can continue using the app.");
+      setShowVerificationWarning(false);
+    } else {
+      alert(" Your email is still not verified. Please check your inbox and click the verification link.");
     }
   };
 
@@ -277,9 +328,18 @@ const AuthPage: React.FC = () => {
           localStorage.removeItem('rememberMe');
         }
         
-        // LOGIN LOGIC - Redirect to home
-        await signInWithEmailAndPassword(auth, email, password);
-        navigate('/');
+        // LOGIN LOGIC
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Check if email is verified
+        if (!user.emailVerified) {
+          setShowVerificationWarning(true);
+          alert("IMPORTANT: Your email is not verified!\n\nPlease check your inbox and verify your email to access all features.\n\nWe've sent you a verification email when you signed up.");
+        } else {
+          // Redirect to home page only if verified
+          navigate('/');
+        }
       } else {
         // SIGN UP LOGIC
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -294,31 +354,33 @@ const AuthPage: React.FC = () => {
         try {
           await sendEmailVerification(user, {
             url: `${window.location.origin}/login`,
-            handleCodeInApp: isMobile // Better for mobile if true
+            handleCodeInApp: false
           });
           
-          let message = 'Account created successfully! ';
+          alert('Account created successfully!\n\n A verification email has been sent to your inbox.\n\n Please verify your email within 24 hours.');
           
-          if (isMobile) {
-            message += "A verification email will be sent. Please open the link in this app to verify your account.";
-          } else {
-            message += "A verification email will be sent in a few minutes. Please check your inbox and verify your email to access all features.";
-          }
+          // Sign out user so they verify email first
+          await auth.signOut();
           
-          alert(message);
+          // Clear form and switch to login
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+          setFullName('');
+          setIsLogin(true);
+          setError('');
         } catch (error) {
           console.error("Verification email error:", error);
-          alert('Account created successfully! You may receive a verification email shortly. Please verify your email to access all features.');
+          alert(' Account created successfully!\n\n Please verify your email when you receive it.');
+          
+          // Clear form and switch to login
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+          setFullName('');
+          setIsLogin(true);
+          setError('');
         }
-        
-        // Clear form and redirect to home (user is already logged in)
-        setEmail('');
-        setPassword('');
-        setConfirmPassword('');
-        setFullName('');
-        
-        // Navigate to home since user is logged in
-        navigate('/');
       }
       
     } catch (err: any) {
@@ -343,9 +405,6 @@ const AuthPage: React.FC = () => {
           break;
         case 'auth/too-many-requests':
           setError("Too many attempts. Please try again later.");
-          break;
-        case 'auth/requires-recent-login':
-          setError("Please log out and log in again to perform this action.");
           break;
         default:
           setError("Authentication failed. Please check your connection.");
@@ -380,6 +439,43 @@ const AuthPage: React.FC = () => {
             {isLogin ? 'Sign in to manage your brick orders' : 'Join the eBricks family today'}
           </p>
         </div>
+
+        {/* Verification Warning for logged in users */}
+        {showVerificationWarning && currentUser && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg animate-pulse">
+            <div className="flex items-start gap-3">
+              <div className="text-yellow-600 text-xl mt-1">
+                <i className="fas fa-exclamation-triangle"></i>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-yellow-800">⚠️ Email Not Verified!</h3>
+                <p className="text-yellow-700 text-sm mt-1">
+                  Your email {currentUser.email} is not verified. Please verify to access all features.
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={handleResendVerification}
+                    className="px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors"
+                  >
+                    Resend Verification
+                  </button>
+                  <button
+                    onClick={handleCheckVerification}
+                    className="px-4 py-2 bg-brick-600 text-white text-sm font-medium rounded-lg hover:bg-brick-700 transition-colors"
+                  >
+                    Check Status
+                  </button>
+                  <button
+                    onClick={() => auth.signOut()}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Error Display */}
         {error && (
@@ -537,7 +633,7 @@ const AuthPage: React.FC = () => {
             )}
 
             {/* Remember Me Checkbox - Login Only */}
-            {isLogin && (
+            {isLogin && !currentUser && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <input
@@ -570,7 +666,6 @@ const AuthPage: React.FC = () => {
               ref={recaptchaRef}
               sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
               onChange={(token) => setCaptchaToken(token)}
-              size={isMobile ? "compact" : "normal"} // Smaller on mobile
             />
           </div>
 
@@ -590,77 +685,76 @@ const AuthPage: React.FC = () => {
                 Processing...
               </>
             ) : (
-              <>{isLogin ? 'SIGN IN' : 'CREATE ACCOUNT'}</>
+              <>{isLogin ? (currentUser ? 'CONTINUE' : 'SIGN IN') : 'CREATE ACCOUNT'}</>
             )}
           </button>
 
           {/* Divider for Google Sign In */}
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">or</span>
-            </div>
-          </div>
+          {!currentUser && (
+            <>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">or</span>
+                </div>
+              </div>
 
-          {/* Continue with Google Button - Moved to bottom */}
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={googleLoading}
-            className={`w-full py-3 rounded-xl font-bold text-gray-700 transition-all shadow border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-3 ${
-              googleLoading ? 'opacity-70 cursor-not-allowed' : ''
-            }`}
-          >
-            {googleLoading ? (
-              <i className="fas fa-spinner fa-spin"></i>
-            ) : (
-              <>
-                <img 
-                  src="https://www.google.com/favicon.ico" 
-                  alt="Google" 
-                  className="w-5 h-5"
-                />
-                Continue with Google
-              </>
-            )}
-          </button>
+              {/* Continue with Google Button */}
+              <button
+                onClick={handleGoogleSignIn}
+                disabled={googleLoading}
+                className={`w-full py-3 rounded-xl font-bold text-gray-700 transition-all shadow border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-3 ${
+                  googleLoading ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
+              >
+                {googleLoading ? (
+                  <i className="fas fa-spinner fa-spin"></i>
+                ) : (
+                  <>
+                    <img 
+                      src="https://www.google.com/favicon.ico" 
+                      alt="Google" 
+                      className="w-5 h-5"
+                    />
+                    Continue with Google
+                  </>
+                )}
+              </button>
+            </>
+          )}
         </form>
 
         {/* Toggle between Login/Signup */}
-        <div className="text-center mt-6 pt-6 border-t border-gray-200">
-          <p className="text-gray-600 text-sm mb-2">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}
-          </p>
-          <button
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError('');
-              setFormErrors({});
-              setCaptchaToken(null);
-              recaptchaRef.current?.reset();
-            }}
-            className="text-brick-600 hover:text-brick-800 font-bold text-sm underline underline-offset-4"
-          >
-            {isLogin ? 'Create a new account' : 'Sign in to existing account'}
-          </button>
-        </div>
-
-        {/* Mobile-specific note */}
-        {isMobile && (
-          <div className="text-center text-xs text-gray-500 pt-2 border-t border-gray-200">
-            <p className="flex items-center justify-center gap-1">
-              <i className="fas fa-mobile-alt"></i>
-              <span>On mobile? Verification/reset links should open in this app.</span>
+        {!currentUser && (
+          <div className="text-center mt-6 pt-6 border-t border-gray-200">
+            <p className="text-gray-600 text-sm mb-2">
+              {isLogin ? "Don't have an account?" : "Already have an account?"}
             </p>
+            <button
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError('');
+                setFormErrors({});
+                setCaptchaToken(null);
+                recaptchaRef.current?.reset();
+              }}
+              className="text-brick-600 hover:text-brick-800 font-bold text-sm underline underline-offset-4"
+            >
+              {isLogin ? 'Create a new account' : 'Sign in to existing account'}
+            </button>
           </div>
         )}
 
-        {/* Security Note */}
-        <div className="text-center text-xs text-gray-500 pt-4">
+        {/* Verification Note */}
+        <div className="text-center text-xs text-gray-500 pt-4 border-t border-gray-200">
           <p className="flex items-center justify-center gap-1">
-            <i className="fas fa-shield-alt"></i>
-            Your data is secure and encrypted
+            <i className="fas fa-envelope"></i>
+            <span>Email verification required for full access</span>
+          </p>
+          <p className="mt-1 text-xs text-gray-400">
+            Google accounts are automatically verified
           </p>
         </div>
       </div>
@@ -703,12 +797,10 @@ const AuthPage: React.FC = () => {
 
               <div className="text-sm text-gray-600">
                 <p>We'll send you a password reset link to your email.</p>
-                {isMobile && (
-                  <p className="mt-1 text-brick-600">
-                    <i className="fas fa-info-circle mr-1"></i>
-                    On mobile? The link should open in this app.
-                  </p>
-                )}
+                <p className="mt-1 text-brick-600 font-medium">
+                  <i className="fas fa-info-circle mr-1"></i>
+                  After resetting, you'll be redirected to login page automatically.
+                </p>
               </div>
 
               <div className="flex gap-3 pt-2">
