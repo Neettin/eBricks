@@ -1,12 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import {
+  HashRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate
+} from 'react-router-dom';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
-import { auth } from './src/services/firebaseConfig'; 
+import { auth } from './src/services/firebaseConfig';
 
 // Components
 import SplashAnimation from './components/SplashAnimation';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 
 // Pages
 import Home from './src/pages/Home';
@@ -14,17 +22,15 @@ import Booking from './src/pages/Booking';
 import Products from './src/pages/Products';
 import Gallery from './src/pages/Gallery';
 import Contact from './src/pages/Contact';
-import AuthPage from './src/pages/AuthPage'; 
+import AuthPage from './src/pages/AuthPage';
 import MyOrders from './src/pages/MyOrders';
 import AdminDashboard from './src/pages/AdminDashboard';
-import AuthRedirectPage from './src/pages/AuthRedirectPage'; // ADD THIS IMPORT
+import AuthRedirectPage from './src/pages/AuthRedirectPage';
 
 const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthPage = location.pathname === '/login';
-
-  const ADMIN_EMAIL = "admin@gmail.com"; 
 
   // --- SESSION TIMEOUT LOGIC ---
   useEffect(() => {
@@ -34,25 +40,29 @@ const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
 
     const resetTimer = () => {
       if (timeout) clearTimeout(timeout);
-      
-      // Logout after 15 minutes of inactivity (900,000 ms)
+
       timeout = setTimeout(async () => {
         try {
           await signOut(auth);
-          navigate('/'); 
+          navigate('/');
           alert("Your session has expired due to inactivity. Please log in again.");
         } catch (error) {
           console.error("Logout error during timeout:", error);
         }
-      }, 900000); 
+      }, 900000); // 15 minutes
     };
 
     const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    activityEvents.forEach(event => document.addEventListener(event, resetTimer));
-    resetTimer(); 
+    activityEvents.forEach(event =>
+      document.addEventListener(event, resetTimer)
+    );
+
+    resetTimer();
 
     return () => {
-      activityEvents.forEach(event => document.removeEventListener(event, resetTimer));
+      activityEvents.forEach(event =>
+        document.removeEventListener(event, resetTimer)
+      );
       if (timeout) clearTimeout(timeout);
     };
   }, [user, navigate]);
@@ -60,7 +70,7 @@ const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
   return (
     <div className="min-h-screen flex flex-col font-sans relative">
       <div className="fixed inset-0 pointer-events-none mandala-bg z-0 opacity-10"></div>
-      
+
       <Navbar user={user} />
 
       <main className="flex-grow relative z-10">
@@ -70,27 +80,27 @@ const AppContent: React.FC<{ user: User | null }> = ({ user }) => {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/contact" element={<Contact />} />
 
-          {/* ADD THIS ROUTE - Catches Firebase auth redirects */}
+          {/* Firebase Auth Redirect */}
           <Route path="/__/auth/action" element={<AuthRedirectPage />} />
 
-          {/* ADMIN ROUTE: Protected by Email */}
+          {/* Admin */}
           <Route path="/admin" element={<AdminDashboard />} />
-          
-          {/* Login logic */}
-          <Route 
-            path="/login" 
-            element={!user ? <AuthPage /> : <Navigate to="/" replace />} 
+
+          {/* Login */}
+          <Route
+            path="/login"
+            element={!user ? <AuthPage /> : <Navigate to="/" replace />}
           />
 
           {/* Protected Routes */}
-          <Route 
-            path="/booking" 
-            element={user ? <Booking /> : <Navigate to="/login" replace />} 
+          <Route
+            path="/booking"
+            element={user ? <Booking /> : <Navigate to="/login" replace />}
           />
 
-          <Route 
-            path="/my-orders" 
-            element={user ? <MyOrders /> : <Navigate to="/login" replace />} 
+          <Route
+            path="/my-orders"
+            element={user ? <MyOrders /> : <Navigate to="/login" replace />}
           />
 
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -148,6 +158,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
+      <ScrollToTop />
       <AppContent user={user} />
     </Router>
   );

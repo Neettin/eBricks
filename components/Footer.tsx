@@ -3,6 +3,8 @@ import { VENDOR } from '../constants';
 import ebricksLogo from '../src/assets/images/ebricks-logo.png';
 import PrivacyPolicyModal from '../src/pages/PrivacyPolicyModal';
 import TermsOfServiceModal from '../src/pages/TermsOfServiceModal';
+import { Link } from "react-router-dom";
+
 
 const Footer: React.FC = () => {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -44,14 +46,49 @@ const Footer: React.FC = () => {
           </div>
 
           <div>
-            <h4 className="font-oswald font-bold text-lg mb-6 uppercase tracking-widest text-heritage-gold">Quick Links</h4>
-            <ul className="space-y-4 text-gray-400 font-medium">
-              <li><a href="#/products" className="hover:text-white transition">Brick Catalog</a></li>
-              <li><a href="#/booking" className="hover:text-white transition">Book an Order</a></li>
-              <li><a href="#/gallery" className="hover:text-white transition">Photo Gallery</a></li>
-              <li><a href="#/contact" className="hover:text-white transition">Support Center</a></li>
-            </ul>
-          </div>
+  <h4 className="font-oswald font-bold text-lg mb-6 uppercase tracking-widest text-heritage-gold">
+    Quick Links
+  </h4>
+
+  <ul className="space-y-4 text-gray-400 font-medium">
+    <li>
+      <Link
+        to="/products"
+        className="hover:text-white transition"
+      >
+        Brick Catalog
+      </Link>
+    </li>
+
+    <li>
+      <Link
+        to="/booking"
+        className="hover:text-white transition"
+      >
+        Book an Order
+      </Link>
+    </li>
+
+    <li>
+      <Link
+        to="/gallery"
+        className="hover:text-white transition"
+      >
+        Photo Gallery
+      </Link>
+    </li>
+
+    <li>
+      <Link
+        to="/contact"
+        className="hover:text-white transition"
+      >
+        Support Center
+      </Link>
+    </li>
+  </ul>
+</div>
+
 
           <div>
             <h4 className="font-oswald font-bold text-lg mb-6 uppercase tracking-widest text-heritage-gold">Business Rules</h4>
