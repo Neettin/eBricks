@@ -12,6 +12,11 @@ const Gallery: React.FC = () => {
   // State for Image Popup
   const [selectedImg, setSelectedImg] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // The minimum distance required to be considered a swipe
+  const minSwipeDistance = 50;
 
   const images = [
     { src: gallery1, title: "Traditional Craft" },
@@ -25,18 +30,46 @@ const Gallery: React.FC = () => {
     setCurrentIndex(index);
   };
 
-  const handleNext = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleNext = () => {
     const nextIndex = (currentIndex + 1) % images.length;
     setCurrentIndex(nextIndex);
     setSelectedImg(images[nextIndex].src);
   };
 
-  const handlePrev = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handlePrev = () => {
     const prevIndex = (currentIndex - 1 + images.length) % images.length;
     setCurrentIndex(prevIndex);
     setSelectedImg(images[prevIndex].src);
+  };
+
+  // Handle touch events for swipe
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      handleNext();
+    }
+    
+    if (isRightSwipe) {
+      handlePrev();
+    }
+    
+    // Reset touch states
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
   // Handle ESC key press
@@ -46,8 +79,8 @@ const Gallery: React.FC = () => {
         setSelectedImg(null);
       }
       if (selectedImg) {
-        if (e.key === 'ArrowRight') handleNext(e as any);
-        if (e.key === 'ArrowLeft') handlePrev(e as any);
+        if (e.key === 'ArrowRight') handleNext();
+        if (e.key === 'ArrowLeft') handlePrev();
       }
     };
 
@@ -103,14 +136,16 @@ const Gallery: React.FC = () => {
           ))}
         </div>
 
-        {/* --- SEPARATE VIDEO SECTION --- */}
+        {/* --- FIXED VIDEO SECTION --- */}
         <div className="pt-20 border-t border-gray-100">
-          <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
-            <div className="text-left">
-              <h3 className="text-heritage-gold font-oswald uppercase tracking-widest text-sm mb-2">The eBricks Experience</h3>
-              <h2 className="text-3xl md:text-4xl font-oswald font-bold text-brick-900 uppercase">Production in Motion</h2>
-            </div>
-            <p className="text-gray-400 max-w-sm md:text-right italic">
+          <div className="text-center mb-12">
+            <h3 className="text-heritage-gold font-oswald uppercase tracking-widest text-sm mb-2">
+              THE EBRICKS EXPERIENCE
+            </h3>
+            <h2 className="text-4xl font-oswald font-bold text-brick-900 uppercase">
+              PRODUCTION IN MOTION
+            </h2>
+            <p className="text-gray-400 mt-4 max-w-xl mx-auto italic">
               "Witness the journey of a single brick from earth to architecture."
             </p>
           </div>
@@ -151,28 +186,21 @@ const Gallery: React.FC = () => {
             </button>
           </div>
           
-          {/* Image Container */}
+          {/* Image Container with Swipe Support */}
           <div 
             className="h-[calc(100vh-64px)] md:h-[calc(100vh-72px)] flex items-center justify-center p-4 md:p-10 relative"
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
-            {/* Mobile Close Button - Visible only on mobile */}
+            {/* Simple Close Button */}
             <button 
               onClick={() => setSelectedImg(null)}
-              className="md:hidden absolute top-4 right-4 z-[1001] w-10 h-10 flex items-center justify-center rounded-full bg-red-600 text-white shadow-lg active:scale-95 transition-transform"
+              className="absolute top-6 right-6 z-[1001] w-10 h-10 flex items-center justify-center text-brick-800 hover:text-brick-900 transition-all duration-300"
               aria-label="Close gallery"
             >
-              <X className="w-5 h-5" />
-            </button>
-            
-            {/* Desktop Close Button - Top Right */}
-            <button 
-              onClick={() => setSelectedImg(null)}
-              className="hidden md:flex absolute top-6 right-6 z-[1001] items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-all duration-300 shadow-lg"
-              aria-label="Close gallery"
-            >
-              <X className="w-5 h-5" />
-              <span className="font-oswald text-sm tracking-wider">CLOSE</span>
+              <X className="w-6 h-6" />
             </button>
             
             {/* Navigation Arrows */}
@@ -195,8 +223,9 @@ const Gallery: React.FC = () => {
             {/* Image */}
             <img 
               src={selectedImg} 
-              className="max-w-full max-h-full rounded-lg md:rounded-2xl shadow-xl object-contain animate-in zoom-in-95 duration-500"
+              className="max-w-full max-h-full rounded-lg md:rounded-2xl shadow-xl object-contain animate-in zoom-in-95 duration-500 touch-none select-none"
               alt={images[currentIndex].title}
+              draggable="false"
             />
             
             {/* Image Info */}
@@ -211,16 +240,6 @@ const Gallery: React.FC = () => {
                 </span>
               </div>
             </div>
-            
-            {/* Swipe Hint for Mobile */}
-            <div className="md:hidden absolute bottom-16 left-1/2 -translate-x-1/2 text-gray-500 text-xs bg-white/80 px-3 py-1 rounded-full">
-              Swipe or use arrows
-            </div>
-          </div>
-          
-          {/* Keyboard Shortcuts Hint */}
-          <div className="hidden md:block absolute bottom-4 left-1/2 -translate-x-1/2 text-gray-400 text-sm bg-white/80 px-4 py-2 rounded-full">
-            
           </div>
         </div>
       )}
