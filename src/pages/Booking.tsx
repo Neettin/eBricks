@@ -118,6 +118,8 @@ const Booking: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [locationPermissionAsked, setLocationPermissionAsked] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [showLoadingAnimation, setShowLoadingAnimation] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const locationInputRef = useRef<HTMLInputElement>(null);
   const [distanceToHub, setDistanceToHub] = useState<number>(0);
 
@@ -347,6 +349,28 @@ const Booking: React.FC = () => {
     }
   }, [locationPermissionAsked]);
 
+  // Loading animation timer - CHANGED FROM 10 TO 5 SECONDS
+  useEffect(() => {
+    if (!showLoadingAnimation) return;
+
+    const duration = 5000; // CHANGED: 5 seconds instead of 10
+    const interval = 100; // Update every 100ms
+    const steps = duration / interval;
+    const increment = 100 / steps;
+    
+    let current = 0;
+    const timer = setInterval(() => {
+      current += increment;
+      setLoadingProgress(Math.min(current, 100));
+      
+      if (current >= 100) {
+        clearInterval(timer);
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [showLoadingAnimation]);
+
   // Price Calculation Logic
   const priceBreakdown = useMemo(() => {
     const selectedProduct = PRODUCTS.find(p => p.id === formData.brickType);
@@ -423,7 +447,12 @@ const Booking: React.FC = () => {
       return;
     }
 
+    // Show loading animation
+    setShowLoadingAnimation(true);
     setIsProcessing(true);
+
+    // CHANGED: Wait for 5 seconds instead of 10 before processing
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
     try {
       await addDoc(collection(db, "orders"), {
@@ -461,14 +490,155 @@ const Booking: React.FC = () => {
         import.meta.env.VITE_EMAILJS_PUBLIC_KEY
       );
 
+      setShowLoadingAnimation(false);
       setIsProcessing(false);
       setOrderComplete(true);
     } catch (error) {
       console.error("Error saving order:", error);
+      setShowLoadingAnimation(false);
       setIsProcessing(false);
       alert("There was an error saving your order. Please try again.");
     }
   };
+
+  // Loading Animation Component
+  if (showLoadingAnimation) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center px-4 py-12">
+        <style>{`
+          .dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+          }
+          
+          @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+          }
+          
+          @keyframes roadAnimation {
+            0% { transform: translateX(0px); }
+            100% { transform: translateX(-350px); }
+          }
+          
+          @keyframes motion {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(3px); }
+            100% { transform: translateY(0px); }
+          }
+        `}</style>
+
+        {/* Brand Name */}
+        <div className="absolute top-8 sm:top-12 left-1/2 transform -translate-x-1/2 text-center">
+          <div className="text-2xl sm:text-3xl font-bold">
+            <span className="text-brick-800 font-['Brush_Script_MT'] italic">Heritage</span>
+            <span className="text-heritage-gold font-serif ml-2">Bricks</span>
+          </div>
+        </div>
+
+        {/* Truck Loader Animation */}
+        <div className="loader mt-8 sm:mt-12">
+          <div className="truckWrapper w-[200px] h-[100px] flex flex-col relative items-center justify-end overflow-x-hidden">
+            {/* Truck Body */}
+            <div className="truckBody w-[130px] mb-1.5 animate-[motion_1s_linear_infinite]">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 198 93" className="w-full">
+                <path
+                  strokeWidth="3"
+                  stroke="#282828"
+                  fill="#F83D3D"
+                  d="M135 22.5H177.264C178.295 22.5 179.22 23.133 179.594 24.0939L192.33 56.8443C192.442 57.1332 192.5 57.4404 192.5 57.7504V89C192.5 90.3807 191.381 91.5 190 91.5H135C133.619 91.5 132.5 90.3807 132.5 89V25C132.5 23.6193 133.619 22.5 135 22.5Z"
+                />
+                <path
+                  strokeWidth="3"
+                  stroke="#282828"
+                  fill="#7D7C7C"
+                  d="M146 33.5H181.741C182.779 33.5 183.709 34.1415 184.078 35.112L190.538 52.112C191.16 53.748 189.951 55.5 188.201 55.5H146C144.619 55.5 143.5 54.3807 143.5 53V36C143.5 34.6193 144.619 33.5 146 33.5Z"
+                />
+                <path
+                  strokeWidth="2"
+                  stroke="#282828"
+                  fill="#282828"
+                  d="M150 65C150 65.39 149.763 65.8656 149.127 66.2893C148.499 66.7083 147.573 67 146.5 67C145.427 67 144.501 66.7083 143.873 66.2893C143.237 65.8656 143 65.39 143 65C143 64.61 143.237 64.1344 143.873 63.7107C144.501 63.2917 145.427 63 146.5 63C147.573 63 148.499 63.2917 149.127 63.7107C149.763 64.1344 150 64.61 150 65Z"
+                />
+                <rect strokeWidth="2" stroke="#282828" fill="#FFFCAB" rx="1" height="7" width="5" y="63" x="187" />
+                <rect strokeWidth="2" stroke="#282828" fill="#282828" rx="1" height="11" width="4" y="81" x="193" />
+                <rect strokeWidth="3" stroke="#282828" fill="#DFDFDF" rx="2.5" height="90" width="121" y="1.5" x="6.5" />
+                <rect strokeWidth="2" stroke="#282828" fill="#DFDFDF" rx="2" height="4" width="6" y="84" x="1" />
+              </svg>
+            </div>
+            
+            {/* Truck Tires */}
+            <div className="truckTires w-[130px] absolute bottom-0 flex items-center justify-between px-[10px] pl-[15px]">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 30 30" className="w-6">
+                <circle strokeWidth="3" stroke="#282828" fill="#282828" r="13.5" cy="15" cx="15" />
+                <circle fill="#DFDFDF" r="7" cy="15" cx="15" />
+              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 30 30" className="w-6">
+                <circle strokeWidth="3" stroke="#282828" fill="#282828" r="13.5" cy="15" cx="15" />
+                <circle fill="#DFDFDF" r="7" cy="15" cx="15" />
+              </svg>
+            </div>
+            
+            {/* Road */}
+            <div className="road w-full h-[1.5px] bg-gray-900 relative bottom-0 self-end rounded">
+              <div className="absolute w-5 h-full bg-gray-900 right-[-50%] rounded animate-[roadAnimation_1.4s_linear_infinite] border-l-4 border-white"></div>
+              <div className="absolute w-2.5 h-full bg-gray-900 right-[-65%] rounded animate-[roadAnimation_1.4s_linear_infinite] border-l-2 border-white"></div>
+            </div>
+            
+            {/* Lamp Post */}
+            <svg
+              className="lampPost absolute bottom-0 right-[-90%] h-[90px] animate-[roadAnimation_1.4s_linear_infinite]"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 453.459 453.459"
+              fill="#282828"
+            >
+              <path d="M252.882,0c-37.781,0-68.686,29.953-70.245,67.358h-6.917v8.954c-26.109,2.163-45.463,10.011-45.463,19.366h9.993
+c-1.65,5.146-2.507,10.54-2.507,16.017c0,28.956,23.558,52.514,52.514,52.514c28.956,0,52.514-23.558,52.514-52.514
+c0-5.478-0.856-10.872-2.506-16.017h9.992c0-9.354-19.352-17.204-45.463-19.366v-8.954h-6.149C200.189,38.779,223.924,16,252.882,16
+c29.952,0,54.32,24.368,54.32,54.32c0,28.774-11.078,37.009-25.105,47.437c-17.444,12.968-37.216,27.667-37.216,78.884v113.914
+h-0.797c-5.068,0-9.174,4.108-9.174,9.177c0,2.844,1.293,5.383,3.321,7.066c-3.432,27.933-26.851,95.744-8.226,115.459v11.202
+h45.75v-11.202c18.625-19.715-4.794-87.527-8.227-115.459c2.029-1.683,3.322-4.223,3.322-7.066c0-5.068-4.107-9.177-9.176-9.177
+h-0.795V196.641c0-43.174,14.942-54.283,30.762-66.043c14.793-10.997,31.559-23.461,31.559-60.277C323.202,31.545,291.656,0,252.882,0z
+M232.77,111.694c0,23.442-19.071,42.514-42.514,42.514c-23.442,0-42.514-19.072-42.514-42.514c0-5.531,1.078-10.957,3.141-16.017
+h78.747C231.693,100.736,232.77,106.162,232.77,111.694z"/>
+            </svg>
+          </div>
+        </div>
+
+        {/* Loading Progress Bar */}
+        <div className="w-full max-w-md mt-8 sm:mt-12">
+          <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Processing your order...</span>
+            <span>{Math.round(loadingProgress)}%</span>
+          </div>
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-brick-600 to-brick-800 transition-all duration-100 ease-linear"
+              style={{ width: `${loadingProgress}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Loading Text */}
+        <div className="text-center max-w-lg mt-8 sm:mt-12">
+          <div className="text-xl sm:text-2xl font-bold text-brick-800 mb-3 dots">
+            Laying the Groundwork
+          </div>
+          <div className="text-gray-600 text-base sm:text-lg leading-relaxed">
+            Your consignment is hitting the factory floor. Synchronizing your order with our kiln schedule.
+          </div>
+        </div>
+
+        {/* Bottom Info */}
+        <div className="absolute bottom-6 sm:bottom-8 text-center text-xs sm:text-sm text-gray-500">
+          <p>Please don't close this window. This may take a moment...</p>
+          <p className="mt-1">Contact {VENDOR.phone} if you need assistance</p>
+        </div>
+      </div>
+    );
+  }
 
   if (orderComplete) {
     return (
@@ -898,7 +1068,7 @@ const Booking: React.FC = () => {
                   )}
                 </div>
                 
-                {/* Selected Location Display - UPDATED to remove FREE DELIVERY section */}
+                {/* Selected Location Display */}
                 {formData.location && (
                   <div className="mt-4 bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl p-4">
                     <div className="flex items-center justify-between">
@@ -936,7 +1106,7 @@ const Booking: React.FC = () => {
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent z-10 group-hover:opacity-100 transition-opacity pointer-events-none">
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-                    <div className="bg-gradient-to-r from-brick-600 to-brick-800 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg text-sm sm:text-base">
+                    <div className="bg-gradient-to-r from-brick-600 to-brick-800 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg text-sm sm:text-base">
                       <i className="fas fa-expand-arrows-alt"></i> Click to Open Full Map
                     </div>
                   </div>
