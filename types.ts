@@ -1,7 +1,8 @@
 
 export enum BrickType {
   B101 = '101',
-  CM = 'CM'
+  CM = 'CM',
+  NTB = 'NTB' 
 }
 
 export interface Product {

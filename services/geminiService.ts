@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 
 // Simple API key getter
 const getApiKey = (): string => {

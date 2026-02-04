@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import { PRODUCTS, TRIP_RULE, ORDER_RULES } from '../constants';
 import { BrickType } from '../types';
 

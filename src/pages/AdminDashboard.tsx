@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import  { useState, useEffect, useRef } from 'react';
 import { auth, db } from '../services/firebaseConfig';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { toast, ToastContainer } from 'react-toastify';
@@ -321,18 +321,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const archiveMessage = async (messageId: string) => {
-    try {
-      await updateDoc(doc(db, "contactMessages", messageId), { 
-        status: 'archived'
-      });
-      toast.success('Message archived');
-    } catch (error) {
-      console.error('Error archiving message:', error);
-      toast.error('Error archiving message');
-    }
-  };
-
   const deleteMessage = async (messageId: string) => {
     try {
       await deleteDoc(doc(db, "contactMessages", messageId));
@@ -364,20 +352,10 @@ const AdminDashboard: React.FC = () => {
 
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
   const confirmedOrders = orders.filter(o => o.status === 'confirmed').length;
-  const onTheWayOrders = orders.filter(o => o.status === 'on_the_way').length;
   const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
   const cancelledOrders = orders.filter(o => o.status === 'cancelled').length;
 
   const unreadMessages = messages.filter(m => !m.read).length;
-  const newMessagesToday = messages.filter(m => {
-    const today = new Date();
-    const messageDate = m.createdAt?.toDate();
-    return messageDate && 
-           messageDate.getDate() === today.getDate() &&
-           messageDate.getMonth() === today.getMonth() &&
-           messageDate.getFullYear() === today.getFullYear() &&
-           !m.read;
-  }).length;
 
   // Helper to parse location
   const parseLocation = (location: string) => {
@@ -413,18 +391,19 @@ const AdminDashboard: React.FC = () => {
   if (showPasswordModal) {
     return (
       <>
-        <ToastContainer 
-          position="top-center"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="colored"
-        />
+        <ToastContainer
+  position="top-center"
+  autoClose={3000}
+  hideProgressBar={false}
+  newestOnTop
+  closeOnClick
+  rtl={false}
+  pauseOnFocusLoss
+  draggable
+  pauseOnHover
+  theme="colored"
+  aria-label="Notification messages"
+/>
         <div className="fixed inset-0 bg-gradient-to-br from-brick-900 to-brick-800 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
             <div className="bg-gradient-to-r from-brick-700 to-brick-900 p-6 text-center">
@@ -520,18 +499,19 @@ const AdminDashboard: React.FC = () => {
   // Main Admin Dashboard Layout with Sidebar
   return (
     <>
-      <ToastContainer 
-        position="top-center"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-      />
+      <ToastContainer
+  position="top-center"
+  autoClose={3000}
+  hideProgressBar={false}
+  newestOnTop
+  closeOnClick
+  rtl={false}
+  pauseOnFocusLoss
+  draggable
+  pauseOnHover
+  theme="colored"
+  aria-label="Notification messages"
+/>
       
       <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
         {/* Mobile Top Bar */}
@@ -859,7 +839,6 @@ const AdminDashboard: React.FC = () => {
                                 <div className={`px-2 py-1 rounded-full text-xs font-bold ${
                                   order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                   order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                                  order.status === 'on_the_way' ? 'bg-orange-100 text-orange-800' :
                                   order.status === 'delivered' ? 'bg-green-100 text-green-800' :
                                   'bg-red-100 text-red-800'
                                 }`}>

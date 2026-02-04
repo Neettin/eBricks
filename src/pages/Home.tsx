@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { PRODUCTS } from '../../constants';
 import { getSmartAssistance } from '../../services/geminiService';
 import { Link, useNavigate } from 'react-router-dom';
@@ -85,6 +85,9 @@ const Home: React.FC = () => {
     return customImage || defaultImage || 'https://images.unsplash.com/photo-1546180059-8d4d5b3c6c2b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80';
   };
 
+  // Filter products to exclude NTB from featured section
+  const featuredProducts = PRODUCTS.filter(product => product.id !== 'NTB');
+
   return (
     <div className="relative min-h-screen">
       
@@ -123,9 +126,12 @@ const Home: React.FC = () => {
               <div className="flex flex-col gap-3">
                 <button 
                   onClick={() => navigate('/login')}
-                  className="w-full bg-brick-800 text-heritage-gold py-4 rounded-2xl font-black text-sm tracking-widest shadow-xl hover:bg-brick-900 transition-all transform hover:scale-[1.02]"
+                  className="w-full bg-gradient-to-r from-brick-700 to-brick-900 hover:from-brick-800 hover:to-brick-950 text-heritage-gold py-4 rounded-2xl font-black text-sm tracking-widest shadow-xl transition-all duration-300 group/btn"
                 >
-                  SIGN IN / REGISTER
+                  <div className="flex items-center justify-center gap-2">
+                    <span>SIGN IN / REGISTER</span>
+                    <i className="fas fa-arrow-right transform group-hover/btn:translate-x-1 transition-transform"></i>
+                  </div>
                 </button>
                 
                 <button 
@@ -143,7 +149,7 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Hero Section - Remains the same */}
+      {/* Hero Section - Updated buttons */}
       <section className="relative h-[95vh] min-h-[600px] flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           {heroImages.length > 0 ? (
@@ -177,55 +183,99 @@ const Home: React.FC = () => {
               Crafting legacy with every trip. Trusted for building Nepal's homes and heritage sites with uncompromising durability.
             </p>
             <div className="flex flex-wrap gap-4 pt-6 text-left">
-              <Link to="/booking" className="bg-brick-600 hover:bg-brick-700 text-white px-8 py-4 rounded-2xl font-black text-lg shadow-[0_20px_50px_rgba(220,38,38,0.3)] transition-all transform hover:-translate-y-1 flex items-center gap-3">
-                Book My Bricks <i className="fas fa-chevron-right text-sm"></i>
+              <Link to="/booking" className="bg-gradient-to-r from-brick-700 to-brick-900 hover:from-brick-800 hover:to-brick-950 text-heritage-gold px-8 py-4 rounded-2xl font-black text-lg shadow-lg hover:shadow-xl transition-all duration-300 group/btn">
+                <div className="flex items-center gap-3">
+                  <span>Book My Bricks</span>
+                  <i className="fas fa-arrow-right transform group-hover/btn:translate-x-1 transition-transform"></i>
+                </div>
               </Link>
-              <Link to="/products" className="bg-white/10 backdrop-blur-xl border-2 border-white/20 hover:bg-white/20 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all">
-                Check Prices
+              <Link to="/products" className="bg-white/10 backdrop-blur-xl border-2 border-white/20 hover:bg-white/20 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all group/btn2">
+                <div className="flex items-center gap-3">
+                  <span>Check Prices</span>
+                  <i className="fas fa-arrow-right transform group-hover/btn2:translate-x-1 transition-transform"></i>
+                </div>
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Featured Bricks Section - Remains the same */}
-      <section className="py-16 md:py-24 bg-white relative">
+      {/* Featured Bricks Section */}
+      <section className="py-16 md:py-20 bg-white relative">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-oswald font-bold text-brick-900 uppercase">Premium Selection</h2>
-              <div className="h-1.5 w-24 bg-heritage-gold rounded-full mt-4"></div>
-            </div>
-            <Link to="/products" className="text-brick-700 font-bold hover:underline text-lg">
-              View All Products →
-            </Link>
+          <div className="mb-10">
+            <h2 className="text-4xl md:text-5xl font-oswald font-bold text-brick-900 uppercase">Premium Selection</h2>
+            <div className="h-1.5 w-24 bg-heritage-gold rounded-full mt-4"></div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
-            {PRODUCTS && PRODUCTS.map(product => {
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10 mb-12">
+            {featuredProducts && featuredProducts.map(product => {
                 const imageUrl = getProductImage(product.id, product.image);
                 return (
                   <div key={product.id} className="group bg-gray-50 rounded-3xl md:rounded-[3rem] overflow-hidden shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-500">
                     <div className="h-64 md:h-72 overflow-hidden relative">
                       <img src={imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={product.name}/>
-                      {product.isRecommended && (
-                        <div className="absolute top-6 left-6 bg-heritage-gold text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg">BEST CHOICE</div>
+                      
+                      {/* Premium Badge for 101 Bricks */}
+                      {product.id === '101' && (
+                        <div className="absolute top-6 left-6 z-20">
+                          <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase shadow-lg flex items-center gap-1 animate-pulse">
+                            <i className="fas fa-award text-xs"></i>
+                            <span>Premium</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Best Choice Badge for C.M. Bricks */}
+                      {product.id === 'CM' && (
+                        <div className="absolute top-6 left-6 z-20">
+                          <div className="bg-gradient-to-r from-heritage-gold to-yellow-500 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase shadow-lg flex items-center gap-1 animate-pulse">
+                            <i className="fas fa-crown text-xs"></i>
+                            <span>Best Choice</span>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <div className="p-6 md:p-10">
+                    <div className="p-6 md:p-8">
                       <h3 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">{product.name}</h3>
                       <p className="text-gray-600 font-mukta mb-6 md:mb-8 text-sm md:text-base">{product.description}</p>
-                      <Link to={`/booking?brick=${product.id}`} className="block text-center bg-brick-800 text-heritage-gold py-3 md:py-4 rounded-xl font-bold hover:bg-brick-900 transition-colors text-sm md:text-base">
-                        BOOK THIS
+                      <Link to={`/booking?brick=${product.id}`} className="block text-center bg-gradient-to-r from-brick-700 to-brick-900 hover:from-brick-800 hover:to-brick-950 text-heritage-gold py-4 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl group/btn5">
+                        <div className="flex items-center justify-center gap-3">
+                          <span>BOOK THIS</span>
+                          <i className="fas fa-arrow-right transform group-hover/btn5:translate-x-1 transition-transform"></i>
+                        </div>
                       </Link>
                     </div>
                   </div>
                 );
             })}
           </div>
+
+          {/* Complete Product Catalog Section - Now BELOW brick cards */}
+          <div className="bg-gradient-to-r from-gray-50 to-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-brick-900 mb-3">Complete Product Catalog Available</h3>
+                <p className="text-gray-600">
+                  For detailed specifications, pricing, and additional brick types including NTB Local Bricks, 
+                  please visit our full product catalog. Get comprehensive information on all our premium construction materials.
+                </p>
+              </div>
+              <Link 
+                to="/products" 
+                className="bg-gradient-to-r from-brick-700 to-brick-900 text-heritage-gold px-6 py-3 rounded-xl font-bold text-sm tracking-wide hover:from-brick-800 hover:to-brick-950 transition-all duration-300 shadow-md hover:shadow-lg group/btn4 whitespace-nowrap"
+              >
+                <div className="flex items-center gap-2">
+                  <span>Explore Catalog</span>
+                  <i className="fas fa-arrow-right transform group-hover/btn4:translate-x-1 transition-transform"></i>
+                </div>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Smart Assistant Section - Remains the same */}
+      {/* Smart Assistant Section - Updated button */}
       <section className="py-20 md:py-32 bg-brick-950 relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 relative z-10 text-center">
            <div className="inline-block bg-heritage-gold text-brick-950 px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest mb-6">NAMASTE! SMART ASSISTANT</div>
@@ -240,10 +290,13 @@ const Home: React.FC = () => {
               />
               <button 
                 onClick={handleAiAsk}
-                className="mt-6 bg-heritage-gold text-brick-950 px-8 md:px-10 py-3 md:py-4 rounded-xl font-bold hover:bg-yellow-400 transition-all flex items-center gap-2 mx-auto disabled:opacity-50 shadow-xl"
+                className="mt-6 bg-gradient-to-r from-heritage-gold to-yellow-500 hover:from-yellow-400 hover:to-yellow-600 text-brick-950 px-8 md:px-10 py-4 rounded-xl font-bold transition-all duration-300 flex items-center gap-2 mx-auto disabled:opacity-50 shadow-xl group/btn6"
                 disabled={isAiLoading || !aiPrompt.trim()}
               >
-                {isAiLoading ? 'PROCESSING...' : 'GET INSTANT ANSWER'}
+                <div className="flex items-center justify-center gap-3">
+                  {isAiLoading ? 'PROCESSING...' : 'GET INSTANT ANSWER'}
+                  <i className="fas fa-arrow-right transform group-hover/btn6:translate-x-1 transition-transform"></i>
+                </div>
               </button>
            </div>
            {aiResponse && (

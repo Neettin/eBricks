@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { PRODUCTS, VENDOR, TRIP_RULE, HUBS } from '../../constants';
 import { BrickType } from '../../types';
 import MapPicker from '../../components/MapPicker';
@@ -196,7 +196,7 @@ const Booking: React.FC = () => {
     "Tarkeshwor, Kathmandu", "Manamaiju, Kathmandu", "Gongabu Chowk, Kathmandu", 
     "Baniyatar, Kathmandu", "Jarankhu, Kathmandu", "Lola, Kathmandu", 
     "Swayambhu Thulo Bharyang, Kathmandu", "Halchowk, Kathmandu", 
-    "Nagarjun, Kathmandu", "Raniban, Kathmandu", "Radhe Radhe Chowk, Kathmandu", 
+    "Nagarjun, Kathmandu", "Raniban, Kathmandu", 
     "White Gumba Area, Kathmandu", "Bafal, Kathmandu", "Solteemode, Kathmandu", 
     "Ravi Bhawan, Kathmandu", "Sanepa Height, Lalitpur",
     
@@ -311,7 +311,15 @@ const Booking: React.FC = () => {
   // Calculate distance to hub when coordinates change
   useEffect(() => {
     const calculateHubDistance = async () => {
-      const hub = HUBS[formData.brickType === BrickType.CM ? 'CM' : '101'];
+      // Determine which hub to use based on brick type
+      let hub;
+      if (formData.brickType === BrickType.CM) {
+        hub = HUBS.CM; // C.M. Special Bricks factory
+      } else if (formData.brickType === BrickType.NTB) {
+        hub = HUBS.NTB; // NTB Local Bricks factory in Changunarayan
+      } else {
+        hub = HUBS['101']; // 101 High Grade bricks factory
+      }
       
       // Calculate road distance
       const roadDistance = calculateDistance(
@@ -471,12 +479,22 @@ const Booking: React.FC = () => {
         createdAt: serverTimestamp()
       });
 
+      // Determine brick type name for email
+      let brickTypeName;
+      if (formData.brickType === BrickType.CM) {
+        brickTypeName = 'C.M. Special Bricks';
+      } else if (formData.brickType === BrickType.NTB) {
+        brickTypeName = 'NTB Local Bricks';
+      } else {
+        brickTypeName = '101 High Grade';
+      }
+
       const templateParams = {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         quantity: formData.quantity,
-        brick_type: formData.brickType === '101' ? '101 High Grade' : 'C.M. Special',
+        brick_type: brickTypeName,
         location: formData.location,
         distance: distanceToHub.toFixed(1),
         total_price: priceBreakdown.total,
@@ -640,117 +658,171 @@ h78.747C231.693,100.736,232.77,106.162,232.77,111.694z"/>
     );
   }
 
+  // Order Complete Screen - FIXED: Make it fixed position to avoid scrolling issues
   if (orderComplete) {
+    // Determine brick type name for display
+    let brickTypeName;
+    if (formData.brickType === BrickType.CM) {
+      brickTypeName = 'C.M. Special Bricks';
+    } else if (formData.brickType === BrickType.NTB) {
+      brickTypeName = 'NTB Local Bricks';
+    } else {
+      brickTypeName = '101 High Grade';
+    }
+
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 sm:py-20 text-center animate-fadeIn">
-        <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-12 border border-green-100">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl sm:text-4xl">
-            <i className="fas fa-check"></i>
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-oswald font-bold text-gray-800 mb-4 uppercase">Order Placed Successfully!</h2>
-          <p className="text-gray-600 text-base sm:text-lg mb-8 max-w-md mx-auto">
-            Sachin Gupta will contact you within 30 minutes to confirm delivery.
-          </p>
-          
-          {/* Bank Transfer Info Display if selected */}
-          {formData.paymentMethod === 'bank' && (
-            <div className="bg-blue-50 rounded-2xl p-4 sm:p-6 mb-8 max-w-2xl mx-auto border border-blue-200">
-              <h3 className="font-bold text-blue-900 text-lg sm:text-xl mb-4 flex items-center gap-2 justify-center">
-                <i className="fas fa-university"></i>
-                Bank Transfer Details
-              </h3>
-              <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8">
-                {/* QR Code Image */}
-                <div className="flex-shrink-0">
-                  <div className="bg-white p-3 sm:p-4 rounded-xl shadow-inner border border-blue-100">
-                    <img 
-                      src={qrCodeImage} 
-                      alt="Bank QR Code" 
-                      className="w-36 h-36 sm:w-48 sm:h-48 object-contain rounded-lg"
-                    />
-                    <p className="text-xs text-gray-600 mt-2 text-center">Scan to Pay</p>
+      <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-gray-50 to-gray-100 overflow-y-auto py-8 md:py-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 md:p-12 border border-green-100">
+            {/* Success Icon */}
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl sm:text-4xl">
+              <i className="fas fa-check"></i>
+            </div>
+            
+            {/* Success Message */}
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-oswald font-bold text-gray-800 mb-4 uppercase text-center">
+              Order Placed Successfully!
+            </h2>
+            <p className="text-gray-600 text-base sm:text-lg mb-8 max-w-md mx-auto text-center">
+              Sachin Gupta will contact you within 30 minutes to confirm delivery.
+            </p>
+            
+            {/* Bank Transfer Info Display if selected */}
+            {formData.paymentMethod === 'bank' && (
+              <div className="bg-blue-50 rounded-2xl p-4 sm:p-6 mb-8 max-w-2xl mx-auto border border-blue-200">
+                <h3 className="font-bold text-blue-900 text-lg sm:text-xl mb-4 flex items-center gap-2 justify-center">
+                  <i className="fas fa-university"></i>
+                  Bank Transfer Details
+                </h3>
+                <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8">
+                  {/* QR Code Image */}
+                  <div className="flex-shrink-0">
+                    <div className="bg-white p-3 sm:p-4 rounded-xl shadow-inner border border-blue-100">
+                      <img 
+                        src={qrCodeImage} 
+                        alt="Bank QR Code" 
+                        className="w-36 h-36 sm:w-48 sm:h-48 object-contain rounded-lg"
+                      />
+                      <p className="text-xs text-gray-600 mt-2 text-center">Scan to Pay</p>
+                    </div>
                   </div>
-                </div>
-                
-                {/* Bank Information */}
-                <div className="flex-1 text-left w-full">
-                  <div className="space-y-3 sm:space-y-4">
-                    <div className="bg-white p-3 sm:p-4 rounded-xl border border-blue-100">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <i className="fas fa-landmark"></i>
-                        </div>
-                        <div>
-                          <p className="text-xs sm:text-sm text-gray-600">Bank Name</p>
-                          <p className="font-bold text-gray-800 text-sm sm:text-lg">Citizens Bank International Ltd.</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white p-3 sm:p-4 rounded-xl border border-blue-100">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <i className="fas fa-credit-card"></i>
-                        </div>
-                        <div>
-                          <p className="text-xs sm:text-sm text-gray-600">Account Number</p>
-                          <p className="font-bold text-gray-800 text-sm sm:text-lg">0400100002228045</p>
+                  
+                  {/* Bank Information */}
+                  <div className="flex-1 text-left w-full">
+                    <div className="space-y-3 sm:space-y-4">
+                      <div className="bg-white p-3 sm:p-4 rounded-xl border border-blue-100">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i className="fas fa-landmark"></i>
+                          </div>
+                          <div>
+                            <p className="text-xs sm:text-sm text-gray-600">Bank Name</p>
+                            <p className="font-bold text-gray-800 text-sm sm:text-lg">Citizens Bank International Ltd.</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="bg-white p-3 sm:p-4 rounded-xl border border-blue-100">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <i className="fas fa-user"></i>
-                        </div>
-                        <div>
-                          <p className="text-xs sm:text-sm text-gray-600">Account Holder</p>
-                          <p className="font-bold text-gray-800 text-sm sm:text-lg">Sachin Gupta</p>
+                      
+                      <div className="bg-white p-3 sm:p-4 rounded-xl border border-blue-100">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i className="fas fa-credit-card"></i>
+                          </div>
+                          <div>
+                            <p className="text-xs sm:text-sm text-gray-600">Account Number</p>
+                            <p className="font-bold text-gray-800 text-sm sm:text-lg">0400100002228045</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <div className="bg-yellow-50 p-3 sm:p-4 rounded-xl border border-yellow-200 mt-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center flex-shrink-0">
-                          <i className="fas fa-exclamation-circle text-sm"></i>
+                      
+                      <div className="bg-white p-3 sm:p-4 rounded-xl border border-blue-100">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i className="fas fa-user"></i>
+                          </div>
+                          <div>
+                            <p className="text-xs sm:text-sm text-gray-600">Account Holder</p>
+                            <p className="font-bold text-gray-800 text-sm sm:text-lg">Sachin Gupta</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs sm:text-sm text-yellow-800 font-semibold">Important:</p>
-                          <p className="text-xs sm:text-sm text-yellow-700">
-                            Please send payment proof to WhatsApp after transfer. Your order will be processed only after payment confirmation.
-                          </p>
+                      </div>
+                      
+                      <div className="bg-yellow-50 p-3 sm:p-4 rounded-xl border border-yellow-200 mt-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i className="fas fa-exclamation-circle text-sm"></i>
+                          </div>
+                          <div>
+                            <p className="text-xs sm:text-sm text-yellow-800 font-semibold">Important:</p>
+                            <p className="text-xs sm:text-sm text-yellow-700">
+                              Please send payment proof to WhatsApp after transfer. Your order will be processed only after payment confirmation.
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          
-          <div className="bg-gray-50 rounded-2xl p-4 sm:p-6 text-left mb-8 max-w-lg mx-auto border border-gray-200">
-            <h3 className="font-bold text-brick-900 border-b pb-2 mb-4 uppercase text-sm sm:text-base">Order Summary</h3>
-            <div className="space-y-2 text-xs sm:text-sm">
-              <div className="flex justify-between"><span>Customer:</span><span className="font-bold">{formData.name}</span></div>
-              <div className="flex justify-between"><span>Brick Type:</span><span className="font-bold uppercase">{formData.brickType === '101' ? '101 High Grade' : 'C.M. Special'}</span></div>
-              <div className="flex justify-between"><span>Distance:</span><span className="font-bold">{distanceToHub.toFixed(1)} km</span></div>
-              <div className="flex justify-between"><span>Total Units:</span><span className="font-bold">{formData.quantity.toLocaleString()}</span></div>
-              <div className="flex justify-between"><span>Delivery to:</span><span className="font-bold text-right max-w-[150px] sm:max-w-[200px] truncate">{formData.location}</span></div>
-              <div className="flex justify-between"><span>Payment:</span><span className="font-bold uppercase">{formData.paymentMethod === 'cod' ? 'CASH ON DELIVERY' : 'BANK TRANSFER'}</span></div>
-              <div className="flex justify-between text-brick-700 border-t pt-2 mt-2 font-black">
-                <span>Total Amount:</span>
-                <span>Rs. {priceBreakdown.total.toLocaleString()}</span>
+            )}
+            
+            {/* Order Summary */}
+            <div className="bg-gray-50 rounded-2xl p-4 sm:p-6 text-left mb-8 max-w-lg mx-auto border border-gray-200">
+              <h3 className="font-bold text-brick-900 border-b pb-2 mb-4 uppercase text-sm sm:text-base">Order Summary</h3>
+              <div className="space-y-2 text-xs sm:text-sm">
+                <div className="flex justify-between"><span>Customer:</span><span className="font-bold">{formData.name}</span></div>
+                <div className="flex justify-between"><span>Brick Type:</span><span className="font-bold uppercase">{brickTypeName}</span></div>
+                <div className="flex justify-between"><span>Distance:</span><span className="font-bold">{distanceToHub.toFixed(1)} km</span></div>
+                <div className="flex justify-between"><span>Total Units:</span><span className="font-bold">{formData.quantity.toLocaleString()}</span></div>
+                <div className="flex justify-between"><span>Delivery to:</span><span className="font-bold text-right max-w-[150px] sm:max-w-[200px] truncate">{formData.location}</span></div>
+                <div className="flex justify-between"><span>Payment:</span><span className="font-bold uppercase">{formData.paymentMethod === 'cod' ? 'CASH ON DELIVERY' : 'BANK TRANSFER'}</span></div>
+                <div className="flex justify-between text-brick-700 border-t pt-2 mt-2 font-black">
+                  <span>Total Amount:</span>
+                  <span>Rs. {priceBreakdown.total.toLocaleString()}</span>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-            <a href={`https://wa.me/${VENDOR.whatsapp}?text=Order Confirmed: ${formData.quantity} ${formData.brickType === '101' ? '101 High Grade' : 'C.M. Special'} Bricks. Distance: ${distanceToHub.toFixed(1)}km. Total: Rs. ${priceBreakdown.total}. Customer: ${formData.name}, Phone: ${formData.phone}, Location: ${formData.location}`} target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-green-700 transition shadow-lg text-sm sm:text-base">
-              <i className="fab fa-whatsapp text-lg sm:text-xl"></i> WhatsApp Confirmation
-            </a>
-            <a href="#/" className="bg-gray-200 text-gray-800 px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-bold hover:bg-gray-300 transition text-sm sm:text-base">Return Home</a>
+            
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+              <a 
+                href={`https://wa.me/${VENDOR.whatsapp}?text=Order Confirmed: ${formData.quantity} ${brickTypeName} Bricks. Distance: ${distanceToHub.toFixed(1)}km. Total: Rs. ${priceBreakdown.total}. Customer: ${formData.name}, Phone: ${formData.phone}, Location: ${formData.location}`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="bg-green-600 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-green-700 transition shadow-lg text-sm sm:text-base"
+              >
+                <i className="fab fa-whatsapp text-lg sm:text-xl"></i> WhatsApp Confirmation
+              </a>
+              <button 
+                onClick={() => {
+                  setOrderComplete(false);
+                  setFormData({
+                    name: '',
+                    phone: '',
+                    email: '',
+                    brickType: BrickType.CM,
+                    quantity: 2000,
+                    location: '',
+                    paymentMethod: 'cod',
+                    coordinates: { lat: 27.7172, lng: 85.3240 },
+                    fullScreenMap: false
+                  });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="bg-gray-200 text-gray-800 px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-bold hover:bg-gray-300 transition text-sm sm:text-base"
+              >
+                Place Another Order
+              </button>
+            </div>
+            
+            {/* Return Home Button */}
+            <div className="text-center mt-6">
+              <a 
+                href="/" 
+                className="inline-block text-brick-700 hover:text-brick-900 font-medium text-sm sm:text-base"
+              >
+                <i className="fas fa-home mr-2"></i> Return to Homepage
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -865,7 +937,7 @@ h78.747C231.693,100.736,232.77,106.162,232.77,111.694z"/>
               
               {/* Quantity Quick Select */}
               <div className="grid grid-cols-4 gap-2 mt-4">
-                {[500, 1000, 2000, 5000].map(qty => (
+                {[2000, 4000, 6000, 8000].map(qty => (
                   <button
                     key={qty}
                     type="button"
@@ -890,7 +962,13 @@ h78.747C231.693,100.736,232.77,106.162,232.77,111.694z"/>
                 </div>
                 <div>
                   <h4 className="font-bold text-gray-800 text-base sm:text-lg">Delivery Details</h4>
-                  <p className="text-xs sm:text-sm text-gray-600">From {formData.brickType === 'CM' ? 'C.M. Factory' : '101 Factory'}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    From {
+                      formData.brickType === BrickType.CM ? 'C.M. Factory' :
+                      formData.brickType === BrickType.NTB ? 'NTB Factory, Changunarayan' : 
+                      '101 Factory'
+                    }
+                  </p>
                 </div>
               </div>
               
@@ -1351,7 +1429,11 @@ h78.747C231.693,100.736,232.77,106.162,232.77,111.694z"/>
                 <div className="text-center sm:text-right">
                   <p className="text-xs text-gray-500 font-bold">{formData.quantity.toLocaleString()} Units</p>
                   <p className="text-xs text-gray-500 font-bold">
-                    {formData.brickType === '101' ? '101 High Grade' : 'C.M. Special'}
+                    {
+                      formData.brickType === BrickType.CM ? 'C.M. Special Bricks' :
+                      formData.brickType === BrickType.NTB ? 'NTB Local Bricks' :
+                      '101 High Grade'
+                    }
                   </p>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-2 hidden sm:block">
                     Delivery to: {formData.location.substring(0, 15)}...
