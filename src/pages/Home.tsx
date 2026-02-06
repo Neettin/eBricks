@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PRODUCTS } from '../../constants';
-import { getSmartAssistance } from '../../services/geminiService';
+import { getSmartAssistance, getQuickReplies } from '../../services/geminiService';
 import { Link, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebaseConfig';
@@ -14,17 +14,36 @@ import pt from '../assets/images/pt.jpg';
 import boudha from '../assets/images/boudha.jpg';
 import ebricksLogo from "../assets/images/ebricks-logo.png";
 
+interface ChatMessage {
+  id: string;
+  type: 'user' | 'bot';
+  content: string;
+  timestamp: Date;
+}
 
 const Home: React.FC = () => {
   const [aiPrompt, setAiPrompt] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [heroImages, setHeroImages] = useState<string[]>([]);
+  const [showQuickReplies, setShowQuickReplies] = useState(true);
+  const [quickReplies, setQuickReplies] = useState<string[]>([
+    "Price kati cha?",
+    "Kun kun brick cha?",
+    "Delivery charge?",
+    "Booking info?"
+  ]);
   
   // NEW STATES FOR POPUP
   const [showAuthModal, setShowAuthModal] = useState(false);
+  
   const navigate = useNavigate();
+  
+  // Ref for auto-scrolling chat
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Initialize hero images with fallback
   useEffect(() => {
@@ -46,7 +65,7 @@ const Home: React.FC = () => {
       if (!user) {
         const timer = setTimeout(() => {
           setShowAuthModal(true);
-        }, 2500); // 2.5 seconds delay
+        }, 2500);
         return () => clearTimeout(timer);
       }
     });
@@ -61,17 +80,147 @@ const Home: React.FC = () => {
     return () => clearInterval(interval);
   }, [heroImages]);
 
-  const handleAiAsk = async () => {
-    if (!aiPrompt.trim()) return;
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    const scrollToBottom = () => {
+      if (chatContainerRef.current) {
+        // Use requestAnimationFrame for smooth scrolling
+        requestAnimationFrame(() => {
+          chatContainerRef.current?.scrollTo({
+            top: chatContainerRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        });
+      }
+    };
+
+    // Small delay to ensure DOM is updated
+    const timeoutId = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(timeoutId);
+  }, [chatMessages]);
+
+  // Remove auto-focus to prevent automatic scrolling to AI section
+  const handleInputFocus = () => {
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  };
+
+  // Send initial greeting when component mounts
+  useEffect(() => {
+    const initialMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'bot',
+      content: `🙏 **Namaste! eBricks ma swagat cha!** 
+
+Tapailai sahayog garna ma yahan uplabdha chu. Price, delivery, ra quality ko barema kehi sodhnu parema nirdhakka bhayi sodhnu hola.
+
+📞 **Direct:** 9851210449 `,
+      timestamp: new Date()
+    };
+    setChatMessages([initialMessage]);
+  }, []);
+
+  const handleQuickReply = (reply: string) => {
+    setAiPrompt(reply);
+    handleAiAsk(reply);
+  };
+
+  const handleAiAsk = async (customPrompt?: string) => {
+    const promptToSend = customPrompt || aiPrompt;
+    if (!promptToSend.trim()) return;
+
+    // Add user message
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: promptToSend,
+      timestamp: new Date()
+    };
+    setChatMessages(prev => [...prev, userMessage]);
+    setAiPrompt('');
+    setShowQuickReplies(false);
     setIsAiLoading(true);
+
     try {
-      const res = await getSmartAssistance(aiPrompt);
-      setAiResponse(res);
+      const res = await getSmartAssistance(promptToSend);
+      const botMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'bot',
+        content: res,
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, botMessage]);
+      
+      // Update quick replies based on the type of question asked
+      updateQuickRepliesBasedOnQuestion(promptToSend, res);
+      setShowQuickReplies(true);
     } catch (error) {
-      setAiResponse('Sorry, I encountered an error. Please try again.');
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'bot',
+        content: '❌ Sorry, malai error bhayo. Please call 9851210449 for immediate assistance.',
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
       console.error('AI Assistant error:', error);
+      
+      // Set fallback quick replies on error
+      setQuickReplies(["Price kati cha?", "Kun kun brick cha?", "Delivery charge?", "Call garnu"]);
+      setShowQuickReplies(true);
     } finally {
       setIsAiLoading(false);
+    }
+  };
+
+  // Function to update quick replies based on the question type
+  const updateQuickRepliesBasedOnQuestion = (question: string, response: string) => {
+    const lowerQuestion = question.toLowerCase();
+    const lowerResponse = response.toLowerCase();
+    
+    // Check what type of question was asked based on keywords
+    if (lowerQuestion.includes('price') || lowerQuestion.includes('kati') || lowerQuestion.includes('dam')) {
+      // For price questions, suggest related questions
+      setQuickReplies([
+        "Delivery charge?",
+        "Kun kun brick cha?",
+        "Calculate 5000 bricks",
+        "Book garnu"
+      ]);
+    } else if (lowerQuestion.includes('delivery') || lowerQuestion.includes('charge') || lowerQuestion.includes('kharcha')) {
+      // For delivery questions
+      setQuickReplies([
+        "Price kati cha?",
+        "Kun brick ramro?",
+        "Book delivery",
+        "Call garnu"
+      ]);
+    } else if (lowerQuestion.includes('kun kun') || lowerQuestion.includes('kati kati') || lowerResponse.includes('available bricks')) {
+      // For brick list questions
+      setQuickReplies([
+        "Price kati cha?",
+        "Delivery charge?",
+        "Kun brick ramro?",
+        "Book garnu"
+      ]);
+    } else if (lowerQuestion.includes('ramro') || lowerQuestion.includes('recommend') || lowerQuestion.includes('kun')) {
+      // For recommendation questions
+      setQuickReplies([
+        "Price kati cha?",
+        "Kun kun brick cha?",
+        "Calculate cost",
+        "Book garnu"
+      ]);
+    } else {
+      // Default quick replies
+      setQuickReplies(getQuickReplies());
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAiAsk();
     }
   };
 
@@ -88,6 +237,54 @@ const Home: React.FC = () => {
   // Filter products to exclude NTB from featured section
   const featuredProducts = PRODUCTS.filter(product => product.id !== 'NTB');
 
+  // Format message content with markdown-like styling
+  const formatMessage = (content: string) => {
+    const lines = content.split('\n');
+    return lines.map((line, index) => {
+      // Bold text
+      if (line.includes('**')) {
+        const parts = line.split('**');
+        return (
+          <p key={index} className="mb-1 leading-relaxed">
+            {parts.map((part, i) => 
+              i % 2 === 1 ? <strong key={i} className="font-bold">{part}</strong> : part
+            )}
+          </p>
+        );
+      }
+      // Headers with emojis
+      if (line.match(/^(🙏|📊|🚚|💎|📞|💰|🏆|⭐|⚖️|🧮|💳|⏰|🏠|🏢|🤔|📍|⚠️|🏗️)/)) {
+        return <p key={index} className="font-bold text-brick-800 mb-1.5 text-sm md:text-base mt-2">{line}</p>;
+      }
+      // Bullet points
+      if (line.trim().startsWith('•') || line.trim().startsWith('✓') || line.trim().startsWith('✅') || line.trim().startsWith('❌')) {
+        return <p key={index} className="ml-3 mb-1 text-xs md:text-sm">{line}</p>;
+      }
+      // Regular lines
+      if (line.trim()) {
+        return <p key={index} className="mb-1 text-xs md:text-sm leading-relaxed">{line}</p>;
+      }
+      return <br key={index} />;
+    });
+  };
+
+  // Reset chat function
+  const handleResetChat = () => {
+    const initialMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'bot',
+      content: `🙏 **Namaste! eBricks ma swagat cha!** 
+
+Ma hajur ko brick-related sabai questions ko answer dinchu:
+
+📞 **Direct:** 9851210449 (Sachin)`,
+      timestamp: new Date()
+    };
+    setChatMessages([initialMessage]);
+    setShowQuickReplies(true);
+    setQuickReplies(["Price kati cha?", "Kun kun brick cha?", "Delivery charge?", "Book garnu"]);
+  };
+
   return (
     <div className="relative min-h-screen">
       
@@ -95,11 +292,9 @@ const Home: React.FC = () => {
       {showAuthModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-brick-950/60 backdrop-blur-md animate-fadeIn">
           <div className="bg-white max-w-sm w-full rounded-[2.5rem] overflow-hidden shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)] border border-heritage-gold/30">
-            {/* Branded Header - Updated with your logo */}
             <div className="bg-brick-800 p-6 text-center relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-heritage-gold/50"></div>
               
-              {/* Replaced crown icon with your eBricks logo */}
               <div className="bg-white w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 p-2 border-2 border-heritage-gold/30 shadow-lg">
                 <img 
                   src={ebricksLogo} 
@@ -149,7 +344,7 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Hero Section - Updated buttons */}
+      {/* Hero Section */}
       <section className="relative h-[95vh] min-h-[600px] flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           {heroImages.length > 0 ? (
@@ -216,7 +411,6 @@ const Home: React.FC = () => {
                     <div className="h-64 md:h-72 overflow-hidden relative">
                       <img src={imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={product.name}/>
                       
-                      {/* Premium Badge for 101 Bricks */}
                       {product.id === '101' && (
                         <div className="absolute top-6 left-6 z-20">
                           <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase shadow-lg flex items-center gap-1 animate-pulse">
@@ -226,7 +420,6 @@ const Home: React.FC = () => {
                         </div>
                       )}
                       
-                      {/* Best Choice Badge for C.M. Bricks */}
                       {product.id === 'CM' && (
                         <div className="absolute top-6 left-6 z-20">
                           <div className="bg-gradient-to-r from-heritage-gold to-yellow-500 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase shadow-lg flex items-center gap-1 animate-pulse">
@@ -251,7 +444,7 @@ const Home: React.FC = () => {
             })}
           </div>
 
-          {/* Complete Product Catalog Section - Now BELOW brick cards */}
+          {/* Complete Product Catalog Section */}
           <div className="bg-gradient-to-r from-gray-50 to-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex-1">
@@ -275,39 +468,285 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Smart Assistant Section - Updated button */}
-      <section className="py-20 md:py-32 bg-brick-950 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 relative z-10 text-center">
-           <div className="inline-block bg-heritage-gold text-brick-950 px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest mb-6">NAMASTE! SMART ASSISTANT</div>
-           <h2 className="text-4xl md:text-5xl font-oswald font-bold text-white mb-6 uppercase">HAVE A QUESTION?</h2>
-           <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 md:p-8 shadow-2xl">
-              <textarea 
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="e.g. 50000 bricks lida delivery charge kati huncha?"
-                className="w-full bg-transparent border-b-2 border-white/30 text-white text-lg md:text-xl placeholder-white/40 p-4 focus:outline-none focus:border-heritage-gold transition-all resize-none"
-                rows={3}
-              />
-              <button 
-                onClick={handleAiAsk}
-                className="mt-6 bg-gradient-to-r from-heritage-gold to-yellow-500 hover:from-yellow-400 hover:to-yellow-600 text-brick-950 px-8 md:px-10 py-4 rounded-xl font-bold transition-all duration-300 flex items-center gap-2 mx-auto disabled:opacity-50 shadow-xl group/btn6"
-                disabled={isAiLoading || !aiPrompt.trim()}
-              >
-                <div className="flex items-center justify-center gap-3">
-                  {isAiLoading ? 'PROCESSING...' : 'GET INSTANT ANSWER'}
-                  <i className="fas fa-arrow-right transform group-hover/btn6:translate-x-1 transition-transform"></i>
+      {/* Cute & Attractive AI Assistant Section - Integrated in Homepage */}
+      <section id="ai-assistant" className="py-12 md:py-20 bg-gradient-to-br from-brick-50 via-white to-heritage-gold/5 relative overflow-hidden">
+        {/* Decorative background elements */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-r from-brick-500/10 to-heritage-gold/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-l from-brick-500/10 to-heritage-gold/10 rounded-full blur-3xl"></div>
+        
+        <div className="max-w-6xl mx-auto px-4 relative z-10">
+          {/* Section Header - Cute Design */}
+          <div className="text-center mb-10 md:mb-14">
+            <div className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brick-600 to-brick-700 text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg mb-6">
+              <i className="fas fa-magic animate-pulse"></i>
+              <span>SMART BRICK ASSISTANT</span>
+              <i className="fas fa-star text-heritage-gold animate-spin" style={{ animationDuration: '2s' }}></i>
+            </div>
+            
+            <h2 className="text-3xl md:text-5xl font-oswald font-bold text-brick-900 mb-4">
+              Ask Me <span className="text-heritage-gold">Anything</span> About Bricks!
+            </h2>
+            <p className="text-gray-600 text-lg md:text-xl max-w-3xl mx-auto font-mukta">
+              Get instant, intelligent answers about prices, delivery, quality, and recommendations
+            </p>
+          </div>
+
+          {/* Main AI Assistant Container - Cute Card Design */}
+          <div className="bg-white rounded-3xl md:rounded-[2.5rem] shadow-2xl overflow-hidden border-2 border-brick-200 hover:border-brick-300 transition-all duration-300">
+            {/* Chat Header - Cute Design with eBricks Logo */}
+            <div className="bg-gradient-to-r from-brick-600 via-brick-700 to-brick-800 p-4 md:p-6 relative overflow-hidden">
+              {/* Decorative elements */}
+              <div className="absolute top-0 left-0 w-32 h-32 bg-heritage-gold/10 rounded-full -translate-x-16 -translate-y-16"></div>
+              <div className="absolute bottom-0 right-0 w-24 h-24 bg-heritage-gold/10 rounded-full translate-x-12 translate-y-12"></div>
+              
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="relative">
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-white flex items-center justify-center shadow-lg p-1.5">
+                      <img 
+                        src={ebricksLogo} 
+                        alt="eBricks Nepal Logo" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white shadow-md animate-pulse"></div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-bold text-white text-lg md:text-xl">eBricks AI Assistant</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-heritage-gold text-sm md:text-base font-medium">Online • Ready to help</span>
+                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
                 </div>
-              </button>
-           </div>
-           {aiResponse && (
-             <div className="mt-8 bg-white/10 p-6 rounded-2xl border border-white/10 text-left text-white font-mukta animate-fadeIn">
-                <p>{aiResponse}</p>
-             </div>
-           )}
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleResetChat}
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-sm flex items-center justify-center transition-all duration-300 group/refresh"
+                    title="Reset chat"
+                  >
+                    <i className="fas fa-redo text-white group-hover/refresh:rotate-180 transition-transform"></i>
+                  </button>
+                  
+                  <a 
+                    href="tel:9851210449"
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-heritage-gold hover:bg-yellow-500 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
+                    title="Call for help"
+                  >
+                    <i className="fas fa-phone-alt text-white"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Chat Body */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 md:gap-6 p-4 md:p-6 bg-gradient-to-b from-gray-50 to-white">
+              {/* Left Side - Chat Messages */}
+              <div className="lg:col-span-2">
+                <div 
+                  ref={chatContainerRef}
+                  className="h-[400px] md:h-[450px] rounded-2xl overflow-y-auto p-4 bg-white border border-gray-200 shadow-inner"
+                  style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(139, 92, 246, 0.05) 1px, transparent 0)',
+                    backgroundSize: '20px 20px'
+                  }}
+                >
+                  {chatMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} mb-4 animate-fadeIn`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-2xl p-4 ${
+                          message.type === 'user'
+                            ? 'bg-gradient-to-r from-brick-600 to-brick-500 text-white rounded-br-none shadow-lg'
+                            : 'bg-gradient-to-r from-gray-50 to-white text-gray-800 border border-gray-100 rounded-bl-none shadow-md'
+                        }`}
+                      >
+                        {message.type === 'bot' && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-brick-100 to-brick-50 flex items-center justify-center border border-brick-200">
+                              <img 
+                                src={ebricksLogo} 
+                                alt="eBricks AI" 
+                                className="w-5 h-5 object-contain"
+                              />
+                            </div>
+                            <span className="text-xs text-gray-500 font-medium">eBricks AI</span>
+                          </div>
+                        )}
+                        <div className="text-sm md:text-base font-mukta leading-relaxed">
+                          {formatMessage(message.content)}
+                        </div>
+                        <div className={`text-[10px] mt-2 ${message.type === 'user' ? 'text-heritage-gold/80' : 'text-gray-400'} flex justify-end`}>
+                          {message.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {isAiLoading && (
+                    <div className="flex justify-start mb-4 animate-fadeIn">
+                      <div className="max-w-[85%] rounded-2xl rounded-bl-none p-4 bg-gradient-to-r from-gray-50 to-white border border-gray-100 shadow-md">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-brick-100 to-brick-50 flex items-center justify-center border border-brick-200">
+                            <img 
+                              src={ebricksLogo} 
+                              alt="eBricks AI" 
+                              className="w-5 h-5 object-contain"
+                            />
+                          </div>
+                          <span className="text-xs text-gray-500 font-medium">eBricks AI</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <div className="w-3 h-3 bg-brick-500 rounded-full animate-bounce"></div>
+                          <div className="w-3 h-3 bg-brick-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-3 h-3 bg-brick-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+
+                {/* Quick Replies - Cute Design */}
+                {showQuickReplies && !isAiLoading && (
+                  <div className="mt-4 p-4 bg-gradient-to-r from-brick-50 to-heritage-gold/5 rounded-2xl border border-brick-100">
+                    <div className="flex items-center gap-2 mb-3">
+                      <i className="fas fa-bolt text-heritage-gold"></i>
+                      <p className="text-sm font-semibold text-brick-700">Quick questions to try:</p>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {quickReplies.map((reply, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleQuickReply(reply)}
+                          className="px-4 py-3 bg-white hover:bg-gradient-to-r hover:from-brick-50 hover:to-brick-100 active:scale-95 text-brick-700 rounded-xl text-sm font-medium transition-all duration-200 border border-brick-200 hover:border-brick-300 hover:shadow-md group/quick"
+                        >
+                          <div className="flex items-center justify-center gap-2">
+                            <i className={`fas ${
+                              reply.includes('Price') ? 'fa-tag' : 
+                              reply.includes('brick cha') ? 'fa-bricks' : 
+                              reply.includes('Delivery') ? 'fa-truck' : 
+                              reply.includes('Book') ? 'fa-shopping-cart' :
+                              reply.includes('Calculate') ? 'fa-calculator' :
+                              reply.includes('Call') ? 'fa-phone-alt' :
+                              'fa-question'
+                            } text-brick-500 group-hover/quick:scale-110 transition-transform`}></i>
+                            <span>{reply}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Input Area - Cute Design */}
+                <div className="mt-4 p-4 bg-gradient-to-r from-white to-gray-50 rounded-2xl border border-gray-200 shadow-sm">
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1 relative">
+                      <textarea
+                        ref={inputRef}
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        onFocus={handleInputFocus}
+                        placeholder="Ask anything about bricks, prices, delivery, quality..."
+                        className="w-full bg-white border-2 border-gray-300 focus:border-brick-400 rounded-xl px-4 py-3 pr-14 resize-none focus:outline-none transition-all text-gray-800 placeholder-gray-400 text-base focus:ring-2 focus:ring-brick-500/20 shadow-inner"
+                        rows={1}
+                        style={{ minHeight: '56px', maxHeight: '120px' }}
+                      />
+                      <button
+                        onClick={() => handleAiAsk()}
+                        disabled={isAiLoading || !aiPrompt.trim()}
+                        className="absolute right-2 bottom-2 w-12 h-12 bg-gradient-to-r from-brick-600 to-brick-500 hover:from-brick-700 hover:to-brick-600 active:scale-95 text-white rounded-xl flex items-center justify-center transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                      >
+                        {isAiLoading ? (
+                          <i className="fas fa-circle-notch fa-spin"></i>
+                        ) : (
+                          <i className="fas fa-paper-plane"></i>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Side - Features & Info */}
+              <div className="lg:col-span-1 mt-6 lg:mt-0">
+                <div className="bg-gradient-to-b from-brick-50 to-white rounded-2xl p-5 md:p-6 border border-brick-100 shadow-md h-full">
+                  <h4 className="text-lg font-bold text-brick-900 mb-4 flex items-center gap-2">
+                    <i className="fas fa-star text-heritage-gold"></i>
+                    Why Use Our AI Assistant?
+                  </h4>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-brick-100 to-brick-50 flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-bolt text-brick-600"></i>
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-brick-800">Instant Responses</h5>
+                        <p className="text-sm text-gray-600">Get answers in seconds, 24/7</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-brick-100 to-brick-50 flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-language text-brick-600"></i>
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-brick-800">Bilingual Support</h5>
+                        <p className="text-sm text-gray-600">Chat in Nepali or English</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-brick-100 to-brick-50 flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-calculator text-brick-600"></i>
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-brick-800">Smart Calculations</h5>
+                        <p className="text-sm text-gray-600">Estimate costs & brick quantities</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-brick-100 to-brick-50 flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-award text-brick-600"></i>
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-brick-800">Expert Advice</h5>
+                        <p className="text-sm text-gray-600">Professional recommendations</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 pt-6 border-t border-brick-200">
+                    <div className="text-center">
+                      <div className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brick-700 to-brick-800 text-white px-4 py-2 rounded-full text-sm font-bold">
+                        <i className="fas fa-phone-alt"></i>
+                        <span>Need Human Help?</span>
+                      </div>
+                      <a 
+                        href="tel:9851210449"
+                        className="block mt-2 text-lg font-bold text-brick-700 hover:text-brick-900 transition-colors"
+                      >
+                        9851210449
+                      </a>
+                      <p className="text-sm text-gray-500 mt-1">(Sachin - Owner)</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </div>
   );
 };
 
-export default Home;
+export default Home;  
