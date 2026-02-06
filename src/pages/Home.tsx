@@ -275,7 +275,7 @@ Tapailai sahayog garna ma yahan uplabdha chu. Price, delivery, ra quality ko bar
       type: 'bot',
       content: `🙏 **Namaste! eBricks ma swagat cha!** 
 
-Ma hajur ko brick-related sabai questions ko answer dinchu:
+Tapailai sahayog garna ma yahan uplabdha chu. Price, delivery, ra quality ko barema kehi sodhnu parema nirdhakka bhayi sodhnu hola.
 
 📞 **Direct:** 9851210449 (Sachin)`,
       timestamp: new Date()
