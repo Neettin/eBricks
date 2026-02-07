@@ -831,7 +831,7 @@ const AdminDashboard: React.FC = () => {
                                       {order.customerName || order.name || 'No Name'}
                                     </div>
                                     <div className="text-xs text-blue-600 font-medium">
-                                      <i className="fas fa-phone-alt mr-1"></i>
+                                      <i className="fas fa-phone mr-1"></i>
                                       {order.phone}
                                     </div>
                                   </div>

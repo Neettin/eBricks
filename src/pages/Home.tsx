@@ -12,6 +12,7 @@ import temple from '../assets/images/temple.jpg';
 import pic2 from '../assets/images/pic2.jpg';
 import pt from '../assets/images/pt.jpg';
 import boudha from '../assets/images/boudha.jpg';
+import ktm from '../assets/images/ktm.jpg'; // Added ktm image import
 import ebricksLogo from "../assets/images/ebricks-logo.png";
 
 interface ChatMessage {
@@ -468,6 +469,143 @@ Tapailai sahayog garna ma yahan uplabdha chu. Price, delivery, ra quality ko bar
         </div>
       </section>
 
+      {/* ============ SIMPLE WHY CHOOSE US SECTION ============ */}
+      <section className="relative py-16 md:py-24 bg-gradient-to-br from-brick-50 to-white overflow-hidden">
+        {/* Background with subtle pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%238b4513' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E")`,
+            backgroundSize: '100px 100px'
+          }}></div>
+        </div>
+
+        {/* Decorative side elements */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-heritage-gold/5 to-transparent rounded-full -translate-x-32 -translate-y-32"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-brick-500/5 to-transparent rounded-full translate-x-48 translate-y-48"></div>
+
+        <div className="max-w-6xl mx-auto px-4 relative z-10">
+          {/* Section Header */}
+          <div className="text-center mb-12 md:mb-16">
+            <div className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brick-600 to-brick-700 text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg mb-6">
+              <i className="fas fa-star"></i>
+              <span>BUILDING TRUST</span>
+              <i className="fas fa-star"></i>
+            </div>
+            
+            <h2 className="text-3xl md:text-5xl font-oswald font-bold text-brick-900 mb-6">
+              Why We Are the <span className="text-heritage-gold">Preferred Choice</span> for Builders
+            </h2>
+            
+            <p className="text-gray-600 text-lg md:text-xl max-w-3xl mx-auto font-mukta leading-relaxed">
+              Your trusted partner in construction excellence
+            </p>
+          </div>
+
+          {/* Main Content Container - Image Left, Content Right */}
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-brick-100 mb-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              {/* Left side - Kathmandu Image */}
+              <div className="relative min-h-[400px] lg:min-h-auto order-2 lg:order-1">
+                <img 
+                  src={ktm || "https://images.unsplash.com/photo-1544551763-46a013bb70d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80"}
+                  alt="Kathmandu Valley - Building Nepal's Future"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brick-900/60 via-brick-800/30 to-transparent"></div>
+                <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                  <div className="text-center">
+                    <div className="inline-flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
+                      <i className="fas fa-mountain text-heritage-gold"></i>
+                      <span className="font-bold">KATHMANDU HERITAGE</span>
+                    </div>
+                    <h3 className="text-2xl font-bold mb-2">Heart of Nepal</h3>
+                    <p className="text-white/80">Building our heritage together</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right side - Text content */}
+              <div className="p-8 md:p-12 lg:p-16 order-1 lg:order-2">
+                <div className="space-y-6">
+                  <div className="relative">
+                    <div className="absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-heritage-gold to-brick-600 rounded-full"></div>
+                    <p className="text-lg text-gray-700 font-mukta leading-relaxed pl-4">
+                      At <span className="font-bold text-brick-700">eBricks</span>, we don't just sell materials; we partner in your construction journey. We understand that a building is more than just structures—it's an investment of a lifetime.
+                    </p>
+                  </div>
+                  
+                  <p className="text-lg text-gray-700 font-mukta leading-relaxed">
+                    That's why we've built our reputation on three core pillars that ensure every project receives the attention and quality it deserves.
+                  </p>
+                </div>
+
+                {/* Three Pillars */}
+                <div className="mt-10 space-y-8">
+                  {/* Pillar 1 - Integrity */}
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-white border border-emerald-100">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center">
+                      <i className="fas fa-handshake text-xl text-emerald-600"></i>
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-brick-800 mb-2">Integrity</h4>
+                      <p className="text-gray-600">
+                        Experience 100% transparency from quote to delivery with our Direct-from-Source guarantee. By eliminating middlemen, we deliver premium building materials at competitive market prices ensuring what you see is what you get, with no hidden costs and zero compromise on grade.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Pillar 2 - Innovation */}
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-white border border-blue-100">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
+                      <i className="fas fa-lightbulb text-xl text-blue-600"></i>
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-brick-800 mb-2">Innovation</h4>
+                      <p className="text-gray-600">
+                        We leverage the latest in brick-making technology to offer eco-friendly and high-durability options that stand the test of time.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Pillar 3 - Reliability */}
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-white border border-amber-100">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
+                      <i className="fas fa-shield-alt text-xl text-amber-600"></i>
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-brick-800 mb-2">Reliability</h4>
+                      <p className="text-gray-600">
+                        With thousands of successful deliveries, we are the trusted name for contractors and homeowners alike across Nepal.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Simple Call to Action */}
+          <div className="text-center bg-gradient-to-r from-brick-800 to-brick-900 rounded-3xl p-8 md:p-12 text-white shadow-xl">
+            <h3 className="text-2xl md:text-3xl font-bold mb-4">Ready to Start Your Project?</h3>
+            <p className="text-brick-200 mb-8 max-w-2xl mx-auto">
+              Get expert consultation and personalized service for your construction needs.
+            </p>
+            
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+              <a 
+                href="tel:9851210449"
+                className="bg-gradient-to-r from-heritage-gold to-yellow-500 hover:from-yellow-500 hover:to-heritage-gold text-brick-900 px-8 py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 group/cta flex items-center gap-3"
+              >
+                <i className="fas fa-phone"></i>
+                <span>CALL FOR FREE CONSULTATION</span>
+                <i className="fas fa-arrow-right transform group-hover/cta:translate-x-1 transition-transform"></i>
+              </a>
+              
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Cute & Attractive AI Assistant Section - Integrated in Homepage */}
       <section id="ai-assistant" className="py-12 md:py-20 bg-gradient-to-br from-brick-50 via-white to-heritage-gold/5 relative overflow-hidden">
         {/* Decorative background elements */}
@@ -727,16 +865,16 @@ Tapailai sahayog garna ma yahan uplabdha chu. Price, delivery, ra quality ko bar
                   <div className="mt-6 pt-6 border-t border-brick-200">
                     <div className="text-center">
                       <div className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brick-700 to-brick-800 text-white px-4 py-2 rounded-full text-sm font-bold">
-                        <i className="fas fa-phone-alt"></i>
+                        <i className="fas fa-phone"></i>
                         <span>Need Human Help?</span>
                       </div>
                       <a 
                         href="tel:9851210449"
                         className="block mt-2 text-lg font-bold text-brick-700 hover:text-brick-900 transition-colors"
                       >
-                        9851210449
+                        +977 - 9851210449
                       </a>
-                      <p className="text-sm text-gray-500 mt-1">(Sachin - Owner)</p>
+                      
                     </div>
                   </div>
                 </div>
@@ -749,4 +887,4 @@ Tapailai sahayog garna ma yahan uplabdha chu. Price, delivery, ra quality ko bar
   );
 };
 
-export default Home;  
+export default Home;
