@@ -1060,9 +1060,23 @@ h78.747C231.693,100.736,232.77,106.162,232.77,111.694z"/>
                 <div className="space-y-2">
                   <input required type="text" placeholder="Full Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-100 rounded-2xl px-4 sm:px-5 py-3 sm:py-4 focus:border-brick-500 outline-none transition-all text-sm sm:text-base" />
                 </div>
-                <div className="space-y-2">
-                  <input required type="tel" placeholder="Phone (98XXXXXXXX)" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-100 rounded-2xl px-4 sm:px-5 py-3 sm:py-4 focus:border-brick-500 outline-none transition-all text-sm sm:text-base" />
-                </div>
+                {/* In the phone input field, change it to: */}
+<div className="space-y-2">
+  <input 
+    required 
+    type="tel" 
+    placeholder="Phone (98XXXXXXXX)" 
+    value={formData.phone} 
+    onChange={e => {
+      // Only allow digits
+      const value = e.target.value.replace(/\D/g, '');
+      setFormData({...formData, phone: value});
+    }}
+    pattern="[0-9]{10}" 
+    title="Please enter a 10-digit phone number"
+    className="w-full bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-100 rounded-2xl px-4 sm:px-5 py-3 sm:py-4 focus:border-brick-500 outline-none transition-all text-sm sm:text-base" 
+  />
+</div>
                 <div className="md:col-span-2 space-y-2">
                   <input type="email" placeholder="Email Address (Optional)" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-100 rounded-2xl px-4 sm:px-5 py-3 sm:py-4 focus:border-brick-500 outline-none transition-all text-sm sm:text-base" />
                 </div>
